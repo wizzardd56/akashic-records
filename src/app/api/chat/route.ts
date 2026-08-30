@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: Request) {
     try {
@@ -8,23 +9,26 @@ export async function POST(req: Request) {
         const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
         if (!apiKey) {
-            return NextResponse.json({ reply: "API key not configured in environment variables." });
+            return NextResponse.json({
+                reply: "Error: GEMINI_API_KEY is missing from your Vercel Environment Variables. Please add it in your Vercel dashboard!"
+            });
         }
 
-        let contentsPayload: any = [];
+        const ai = new GoogleGenAI({ apiKey });
+        let contents: any = [];
 
-        // If a file (PDF/Text) was uploaded as base64, send it directly to Gemini natively
+        // Handle File Uploads (PDFs, TXTs, etc.) via Multimodal Base64
         if (fileData && mimeType) {
             const base64Data = fileData.includes(",") ? fileData.split(",")[1] : fileData;
-
             let instruction = "Provide a comprehensive, professional summary of this document for a government statistical officer under MoSPI.";
+
             if (mode === "quiz") {
                 instruction = "Generate 1 clear multiple-choice question with 3 options based on this document.";
             } else if (prompt) {
                 instruction = prompt;
             }
 
-            contentsPayload = [
+            contents = [
                 {
                     inlineData: {
                         mimeType: mimeType,
@@ -36,7 +40,7 @@ export async function POST(req: Request) {
                 }
             ];
         } else {
-            // Standard Text / Copilot Chat / Source Q&A
+            // Handle Text Prompts, Copilot Drawer, and Source Q&A
             let promptText = "";
             if (sourceContent || mode) {
                 const latestPrompt = prompt || "Analyze this source";
@@ -55,32 +59,22 @@ export async function POST(req: Request) {
                 promptText = `You are Akashic Copilot, an elite AI assistant for India's Official Statistical System under MoSPI (Ministry of Statistics and Programme Implementation) for SIH 26101. Provide precise, professional, and insightful answers regarding statistical data, sampling, CPI/IIP calculations, GVA modeling, and data pipelines. User query: ${latestMessage}`;
             }
 
-            contentsPayload = [{ parts: [{ text: promptText }] }];
+            contents = promptText;
         }
 
-        const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    contents: contentsPayload,
-                }),
-            }
-        );
+        // Call Gemini 2.5 Flash using the official SDK
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: contents,
+        });
 
-        const data = await geminiRes.json();
-        const reply =
-            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-            "I am analyzing the document contents. How else can I assist your audit?";
-
+        const reply = response.text || "Gemini generated an empty response.";
         return NextResponse.json({ reply });
+
     } catch (error: any) {
-        console.error("Gemini API Error:", error);
+        console.error("Gemini API SDK Error:", error);
         return NextResponse.json(
-            { reply: "Neural link recalibrating. Failed to parse document source." },
+            { reply: `Gemini API Error: ${error.message || "Failed to process request."}` },
             { status: 200 }
         );
     }
