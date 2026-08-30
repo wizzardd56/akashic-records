@@ -17,6 +17,7 @@ import {
     Download,
     Cpu,
     Database,
+    ArrowRight,
 } from "lucide-react";
 import { AICopilotDrawer } from "./components/AICopilotDrawer";
 import { QuizModal } from "./components/QuizModal";
