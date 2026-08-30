@@ -98,6 +98,8 @@ export default function NotebookPage() {
     };
 
     // Handle Chat Q&A via Gemini API
+    // Inside your NotebookPage component, replace handleSendChat with this:
+
     const handleSendChat = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!chatQuery.trim()) return;
@@ -105,7 +107,7 @@ export default function NotebookPage() {
         const userMsg = chatQuery;
         setChatQuery("");
         setChatLog(prev => [...prev, { role: "user", text: userMsg }]);
-        setChatLog(prev => [...prev, { role: "ai", text: "Analyzing document source..." }]);
+        setChatLog(prev => [...prev, { role: "ai", text: "Analyzing source material..." }]);
 
         try {
             const res = await fetch("/api/chat", {
@@ -120,20 +122,20 @@ export default function NotebookPage() {
 
             const data = await res.json();
 
+            // Remove "Analyzing..." and append real response
             setChatLog(prev => {
                 const copy = [...prev];
                 copy.pop(); // remove loading message
-                return [...copy, { role: "ai", text: data.reply || data.error || "No response generated." }];
+                return [...copy, { role: "ai", text: data.reply || "No response generated." }];
             });
-        } catch {
+        } catch (err) {
             setChatLog(prev => {
                 const copy = [...prev];
                 copy.pop();
-                return [...copy, { role: "ai", text: `Based on your active source "${activeSource?.title}": ${activeSource?.content.slice(0, 250)}...` }];
+                return [...copy, { role: "ai", text: "Error connecting to Gemini API. Check your API key." }];
             });
         }
     };
-
     return (
         <div className="min-h-screen bg-background text-foreground p-6 md:p-10 flex flex-col relative">
             {/* Top Navigation & Header */}
@@ -184,8 +186,8 @@ export default function NotebookPage() {
                                 key={src.id}
                                 onClick={() => setActiveSourceId(src.id)}
                                 className={`group relative rounded-xl border p-4 text-left transition-all cursor-pointer ${activeSourceId === src.id
-                                        ? "border-accent bg-accent/10 shadow-md shadow-accent/5"
-                                        : "border-border bg-background/50 hover:border-accent/50 hover:bg-surface/60"
+                                    ? "border-accent bg-accent/10 shadow-md shadow-accent/5"
+                                    : "border-border bg-background/50 hover:border-accent/50 hover:bg-surface/60"
                                     }`}
                             >
                                 <div className="flex items-start justify-between gap-2">
@@ -250,8 +252,8 @@ export default function NotebookPage() {
                                 >
                                     <div
                                         className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.role === "user"
-                                                ? "bg-accent text-background font-semibold"
-                                                : "bg-background/80 border border-border text-foreground"
+                                            ? "bg-accent text-background font-semibold"
+                                            : "bg-background/80 border border-border text-foreground"
                                             }`}
                                     >
                                         {msg.text}
