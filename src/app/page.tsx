@@ -2,9 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { SceneContainer } from "../three/components/SceneContainer";
+import dynamic from "next/dynamic";
 import { Sparkles, ShieldCheck, UserCheck, Compass, ArrowRight, X } from "lucide-react";
 import { supabase } from "./dashboard/supabaseClient";
+
+const SceneContainer = dynamic(
+  () => import("../three/components/SceneContainer").then((mod) => mod.SceneContainer),
+  { ssr: false }
+);
 
 export default function LandingPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -189,8 +194,8 @@ export default function LandingPage() {
               </form>
             </div>
           </div>
-        </div>
-      )}
-    </main>
-  );
+                )}
+        </main>
+      );
+    }
 }
