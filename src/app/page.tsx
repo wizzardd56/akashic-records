@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Sparkles, ShieldCheck, UserCheck, Compass, ArrowRight, X } from "lucide-react";
+import { Sparkles, UserCheck, ArrowRight, X } from "lucide-react";
 import { supabase } from "./dashboard/supabaseClient";
 
 const SceneContainer = dynamic(
@@ -17,6 +17,30 @@ export default function LandingPage() {
   const [password, setPassword] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check if user is already authenticated on mount
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setIsLoggedIn(true);
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }
+    checkAuth();
+  }, []);
+
+  const handleGetStarted = () => {
+    if (isLoggedIn) {
+      window.location.href = "/dashboard";
+    } else {
+      setIsAuthModalOpen(true);
+    }
+  };
 
   const handleGoogleAuth = async () => {
     try {
@@ -73,7 +97,7 @@ export default function LandingPage() {
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <button
             type="button"
-            onClick={() => setIsAuthModalOpen(true)}
+            onClick={handleGetStarted}
             className="group flex items-center gap-2 rounded-2xl bg-accent px-8 py-4 font-bold text-background transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-accent/30 dark:glow-cyan cursor-pointer"
           >
             <span>GET STARTED</span>
