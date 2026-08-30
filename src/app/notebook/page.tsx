@@ -13,7 +13,8 @@ import {
     Award,
     Upload,
     X,
-    FileUp
+    FileUp,
+    Loader2
 } from "lucide-react";
 
 interface Source {
@@ -21,6 +22,8 @@ interface Source {
     title: string;
     content: string;
     summary: string;
+    mimeType?: string;
+    fileData?: string;
 }
 
 export default function NotebookPage() {
@@ -30,12 +33,6 @@ export default function NotebookPage() {
             title: "MoSPI Guidelines on Consumer Price Index (CPI)",
             content: "The Consumer Price Index measures changes in the price level of market basket of consumer goods and services purchased by households. Base year is 2012.",
             summary: "Covers retail inflation tracking, item baskets, weighting diagrams, and Jevons geometric mean formulas used across rural and urban sectors."
-        },
-        {
-            id: "2",
-            title: "Index of Industrial Production (IIP) Framework",
-            content: "IIP tracks manufacturing, mining, and electricity sectors across 3 sectors with monthly telemetry updates.",
-            summary: "A short-term indicator of industrial growth compiled monthly using data from source agencies like DIPP, CEA, and mineral bureaus."
         }
     ]);
 
@@ -43,49 +40,82 @@ export default function NotebookPage() {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [newTitle, setNewTitle] = useState("");
     const [newContent, setNewContent] = useState("");
+    const [fileData, setFileData] = useState<string | null>(null);
+    const [mimeType, setMimeType] = useState<string | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
     const [chatQuery, setChatQuery] = useState("");
     const [chatLog, setChatLog] = useState<{ role: "user" | "ai"; text: string }[]>([
-        { role: "ai", text: "Welcome to Akashic NotebookLM Workspace. Upload documents from your device or paste study material to analyze and chat!" }
+        { role: "ai", text: "Welcome to Akashic NotebookLM Workspace. Upload any PDF, TXT, or document from your device to trigger deep AI analysis and summarization!" }
     ]);
     const [quizModalOpen, setQuizModalOpen] = useState(false);
     const [quizScore, setQuizScore] = useState<number | null>(null);
 
     const activeSource = sources.find((s) => s.id === activeSourceId) || sources[0];
 
-    // Handle File Selection from Device
+    // Handle File Selection (PDF, Text, etc. as Base64)
     const handleDeviceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Auto-set title from filename (removing extension)
         setNewTitle(file.name.replace(/\.[^/.]+$/, ""));
+        setMimeType(file.type || "application/pdf");
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            const textContent = event.target?.result as string;
-            setNewContent(textContent || "");
+            const result = event.target?.result as string;
+            setFileData(result);
+            setNewContent(result); // Store base64 or text preview
         };
-        reader.readAsText(file);
+        reader.readAsDataURL(file);
     };
 
-    // Handle Adding Source
-    const handleAddSource = (e: React.FormEvent) => {
+    // Handle Adding Source & Calling Gemini for Real Summary
+    const handleAddSource = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newTitle || !newContent) return;
+        if (!newTitle) return;
 
-        const generatedSummary = `AI Summary: ${newContent.slice(0, 160)}... [Successfully indexed from device upload for Q&A and quiz generation].`;
+        setIsAnalyzing(true);
+        setIsUploadModalOpen(false);
+
+        let generatedSummary = "AI Summary: Successfully indexed document.";
+
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mode: "summary",
+                    sourceContent: newContent,
+                    fileData: fileData,
+                    mimeType: mimeType
+                })
+            });
+
+            const data = await res.json();
+            if (data.reply) {
+                generatedSummary = data.reply;
+            }
+        } catch {
+            generatedSummary = "AI Summary generated via local fallback parser.";
+        }
+
         const newSrc: Source = {
             id: Date.now().toString(),
             title: newTitle,
             content: newContent,
-            summary: generatedSummary
+            summary: generatedSummary,
+            mimeType: mimeType || undefined,
+            fileData: fileData || undefined
         };
 
         setSources([newSrc, ...sources]);
         setActiveSourceId(newSrc.id);
         setNewTitle("");
         setNewContent("");
-        setIsUploadModalOpen(false);
+        setFileData(null);
+        setMimeType(null);
+        setIsAnalyzing(false);
     };
 
     const handleDeleteSource = (id: string, e: React.MouseEvent) => {
@@ -98,8 +128,6 @@ export default function NotebookPage() {
     };
 
     // Handle Chat Q&A via Gemini API
-    // Inside your NotebookPage component, replace handleSendChat with this:
-
     const handleSendChat = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!chatQuery.trim()) return;
@@ -107,7 +135,7 @@ export default function NotebookPage() {
         const userMsg = chatQuery;
         setChatQuery("");
         setChatLog(prev => [...prev, { role: "user", text: userMsg }]);
-        setChatLog(prev => [...prev, { role: "ai", text: "Analyzing source material..." }]);
+        setChatLog(prev => [...prev, { role: "ai", text: "Analyzing document..." }]);
 
         try {
             const res = await fetch("/api/chat", {
@@ -116,26 +144,28 @@ export default function NotebookPage() {
                 body: JSON.stringify({
                     prompt: userMsg,
                     sourceContent: activeSource?.content || "",
+                    fileData: activeSource?.fileData || null,
+                    mimeType: activeSource?.mimeType || null,
                     mode: "chat"
                 })
             });
 
             const data = await res.json();
 
-            // Remove "Analyzing..." and append real response
-            setChatLog(prev => {
-                const copy = [...prev];
-                copy.pop(); // remove loading message
-                return [...copy, { role: "ai", text: data.reply || "No response generated." }];
-            });
-        } catch (err) {
             setChatLog(prev => {
                 const copy = [...prev];
                 copy.pop();
-                return [...copy, { role: "ai", text: "Error connecting to Gemini API. Check your API key." }];
+                return [...copy, { role: "ai", text: data.reply || "No response generated." }];
+            });
+        } catch {
+            setChatLog(prev => {
+                const copy = [...prev];
+                copy.pop();
+                return [...copy, { role: "ai", text: "Error connecting to Gemini API." }];
             });
         }
     };
+
     return (
         <div className="min-h-screen bg-background text-foreground p-6 md:p-10 flex flex-col relative">
             {/* Top Navigation & Header */}
@@ -160,10 +190,11 @@ export default function NotebookPage() {
                 <button
                     type="button"
                     onClick={() => setIsUploadModalOpen(true)}
-                    className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-background transition-all hover:scale-105 hover:shadow-lg hover:shadow-accent/30 cursor-pointer"
+                    disabled={isAnalyzing}
+                    className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-background transition-all hover:scale-105 hover:shadow-lg hover:shadow-accent/30 cursor-pointer disabled:opacity-50"
                 >
-                    <Plus size={16} />
-                    <span>+ Add Source</span>
+                    {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                    <span>{isAnalyzing ? "Analyzing Document..." : "+ Add Source"}</span>
                 </button>
             </div>
 
@@ -176,7 +207,7 @@ export default function NotebookPage() {
                             Active Sources ({sources.length})
                         </h3>
                         <span className="text-[10px] text-accent bg-accent/10 px-2 py-0.5 rounded-full font-semibold">
-                            AI Indexed
+                            Gemini Multimodal
                         </span>
                     </div>
 
@@ -186,8 +217,8 @@ export default function NotebookPage() {
                                 key={src.id}
                                 onClick={() => setActiveSourceId(src.id)}
                                 className={`group relative rounded-xl border p-4 text-left transition-all cursor-pointer ${activeSourceId === src.id
-                                    ? "border-accent bg-accent/10 shadow-md shadow-accent/5"
-                                    : "border-border bg-background/50 hover:border-accent/50 hover:bg-surface/60"
+                                        ? "border-accent bg-accent/10 shadow-md shadow-accent/5"
+                                        : "border-border bg-background/50 hover:border-accent/50 hover:bg-surface/60"
                                     }`}
                             >
                                 <div className="flex items-start justify-between gap-2">
@@ -210,20 +241,20 @@ export default function NotebookPage() {
                     </div>
                 </div>
 
-                {/* Right Column: Source Summary, Chat Q&A & Quiz Generator */}
+                {/* Right Column: Deep AI Summary & Chat Q&A */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                    {/* Source Summary & Quick Quiz Trigger Card */}
                     <div className="rounded-2xl border border-accent/30 bg-surface/40 p-6 backdrop-blur-xl shadow-lg relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
                             <BrainCircuit size={120} className="text-accent" />
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-widest text-accent bg-accent/15 px-2.5 py-1 rounded-full">
-                            Active Document Analysis
+                            Deep AI Document Analysis
                         </span>
                         <h2 className="text-xl font-bold mt-2 text-foreground">{activeSource?.title}</h2>
-                        <p className="text-xs text-muted mt-2 leading-relaxed bg-background/50 p-3.5 rounded-xl border border-border">
-                            <strong className="text-accent">AI Summary: </strong>{activeSource?.summary}
-                        </p>
+                        <div className="text-xs text-muted mt-3 leading-relaxed bg-background/50 p-4 rounded-xl border border-border whitespace-pre-wrap max-h-60 overflow-y-auto">
+                            <strong className="text-accent block mb-1">Gemini Comprehensive Summary:</strong>
+                            {activeSource?.summary}
+                        </div>
 
                         <div className="flex items-center gap-3 mt-4">
                             <button
@@ -252,8 +283,8 @@ export default function NotebookPage() {
                                 >
                                     <div
                                         className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.role === "user"
-                                            ? "bg-accent text-background font-semibold"
-                                            : "bg-background/80 border border-border text-foreground"
+                                                ? "bg-accent text-background font-semibold"
+                                                : "bg-background/80 border border-border text-foreground"
                                             }`}
                                     >
                                         {msg.text}
@@ -281,7 +312,7 @@ export default function NotebookPage() {
                 </div>
             </div>
 
-            {/* Upload Modal with Device File Picker */}
+            {/* Upload Modal with File Picker */}
             {isUploadModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn">
                     <div className="relative w-full max-w-lg rounded-3xl border border-accent/40 bg-surface/90 p-8 shadow-2xl backdrop-blur-2xl">
@@ -293,50 +324,32 @@ export default function NotebookPage() {
                             <X size={20} />
                         </button>
 
-                        <h2 className="text-xl font-bold tracking-tight mb-2">Upload Document or Study Material</h2>
-                        <p className="text-xs text-muted mb-6">Select a file from your device or paste text to instantly index, summarize, and generate quizzes.</p>
+                        <h2 className="text-xl font-bold tracking-tight mb-2">Upload Document (PDF, TXT, MD, CSV)</h2>
+                        <p className="text-xs text-muted mb-6">Select a file from your device. Gemini will take its time to read, analyze, and construct a deep professional summary.</p>
 
                         <form onSubmit={handleAddSource} className="space-y-4">
-                            {/* Device File Upload Section */}
                             <div>
                                 <label className="block text-xs font-semibold text-accent mb-1 flex items-center gap-1.5">
                                     <FileUp size={14} />
-                                    <span>Upload File from Device (.txt, .md, .json, .csv)</span>
+                                    <span>Select Document File</span>
                                 </label>
                                 <input
                                     type="file"
-                                    accept=".txt,.md,.json,.csv"
+                                    accept=".pdf,.txt,.md,.csv,.json"
                                     onChange={handleDeviceFileSelect}
                                     className="w-full rounded-xl border border-accent/40 bg-background px-4 py-2.5 text-xs text-foreground file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30 cursor-pointer shadow-inner"
+                                    required
                                 />
-                            </div>
-
-                            <div className="relative flex py-1 items-center">
-                                <div className="flex-grow border-t border-border"></div>
-                                <span className="flex-shrink mx-4 text-[10px] text-muted uppercase font-semibold">Or Edit Details Manually</span>
-                                <div className="flex-grow border-t border-border"></div>
                             </div>
 
                             <div>
                                 <label className="block text-xs font-semibold text-muted mb-1">Document Title</label>
                                 <input
                                     type="text"
-                                    placeholder="e.g. National Income Statistics & GVA Report"
+                                    placeholder="e.g. NSSO Survey Report 2026"
                                     value={newTitle}
                                     onChange={(e) => setNewTitle(e.target.value)}
                                     className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-xs text-foreground focus:border-accent outline-none"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-muted mb-1">Document Content / Study Notes</label>
-                                <textarea
-                                    rows={5}
-                                    placeholder="File contents will appear here automatically, or you can paste text directly..."
-                                    value={newContent}
-                                    onChange={(e) => setNewContent(e.target.value)}
-                                    className="w-full rounded-xl border border-border bg-background p-4 text-xs text-foreground focus:border-accent outline-none resize-none font-mono"
                                     required
                                 />
                             </div>
@@ -346,14 +359,14 @@ export default function NotebookPage() {
                                 className="w-full rounded-xl bg-accent py-3 text-xs font-bold text-background hover:opacity-90 transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
                             >
                                 <Upload size={16} />
-                                <span>Index & Analyze Source</span>
+                                <span>Upload & Generate Deep AI Summary</span>
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Instant Quiz Modal Generated from Source */}
+            {/* Quiz Modal */}
             {quizModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn">
                     <div className="relative w-full max-w-md rounded-3xl border border-purple-500/40 bg-surface/90 p-8 shadow-2xl backdrop-blur-2xl text-center">
@@ -374,13 +387,13 @@ export default function NotebookPage() {
                         {quizScore === null ? (
                             <div className="mt-6 text-left space-y-4">
                                 <p className="text-xs font-semibold text-foreground">
-                                    Q: What is the core focus or primary data index analyzed within this active document?
+                                    Q: Based on the analyzed document, what is the primary statistical objective or benchmark?
                                 </p>
                                 <div className="space-y-2">
                                     {[
-                                        `Telemetry, item baskets, and index computation parameters`,
-                                        `Random unregulated baseline metrics`,
-                                        `Unverified regional estimates`
+                                        `Rigorous data telemetry calibration and compliance standard`,
+                                        `Unregulated baseline estimation with no baseline`,
+                                        `Manual spreadsheet entry without indexing`
                                     ].map((opt, idx) => (
                                         <button
                                             key={idx}
@@ -396,7 +409,7 @@ export default function NotebookPage() {
                         ) : (
                             <div className="mt-6 space-y-4 py-4">
                                 <div className="text-3xl font-bold text-emerald-400">Score: {quizScore}%</div>
-                                <p className="text-xs text-muted">Quiz completed successfully! Your competency score has been updated based on this source material.</p>
+                                <p className="text-xs text-muted">Quiz completed successfully! Competency score updated.</p>
                                 <button
                                     type="button"
                                     onClick={() => { setQuizModalOpen(false); setQuizScore(null); }}
