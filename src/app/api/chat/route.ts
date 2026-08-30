@@ -62,9 +62,9 @@ export async function POST(req: Request) {
             contents = promptText;
         }
 
-        // Call Gemini 2.5 Flash using the official SDK
+        // Updated to latest recommended model: gemini-3.6-flash
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.6-flash",
             contents: contents,
         });
 
