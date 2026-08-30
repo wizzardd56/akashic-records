@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
-// Initialize Gemini client using server environment variable
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY });
 
 export async function POST(req: Request) {
@@ -10,7 +9,7 @@ export async function POST(req: Request) {
         const latestMessage = messages[messages.length - 1]?.content || "Hello";
 
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             contents: [
                 {
                     role: "user",
