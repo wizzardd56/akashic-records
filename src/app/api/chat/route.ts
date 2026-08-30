@@ -19,9 +19,7 @@ export async function POST(req: Request) {
         const ai = new GoogleGenAI({ apiKey });
         let contents: any;
 
-        // ─── Handle File Uploads (PDFs, TXTs, etc.) via Multimodal Base64 ───
         if (fileData && mimeType) {
-            // Strip the Data-URL prefix if present (e.g. "data:application/pdf;base64,AAAA...")
             const base64Data = fileData.includes(",")
                 ? fileData.split(",")[1]
                 : fileData;
@@ -36,7 +34,6 @@ export async function POST(req: Request) {
                 instruction = prompt;
             }
 
-            // ✅ Correct SDK format: contents → array of Content objects → each has role + parts
             contents = [
                 {
                     role: "user",
@@ -54,7 +51,6 @@ export async function POST(req: Request) {
                 },
             ];
         } else {
-            // ─── Handle Text Prompts, Copilot Drawer, and Source Q&A ───
             let promptText = "";
 
             if (sourceContent || mode) {
@@ -76,13 +72,20 @@ export async function POST(req: Request) {
                 promptText = `You are Akashic Copilot, an elite AI assistant for India's Official Statistical System under MoSPI (Ministry of Statistics and Programme Implementation) for SIH 26101. Provide precise, professional, and insightful answers regarding statistical data, sampling, CPI/IIP calculations, GVA modeling, and data pipelines.\n\nUser query: ${latestMessage}`;
             }
 
-            // ✅ For text-only, a plain string works fine with the SDK
-            contents = promptText;
+            contents = [
+                {
+                    role: "user",
+                    parts: [
+                        {
+                            text: promptText,
+                        },
+                    ],
+                },
+            ];
         }
 
-        // ─── Call Gemini using the official SDK ───
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.6-flash",
             contents: contents,
         });
 
