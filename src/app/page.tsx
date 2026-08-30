@@ -194,8 +194,8 @@ export default function LandingPage() {
               </form>
             </div>
           </div>
-                )}
-        </main>
-      );
-    }
+        </div>
+      )}
+    </main>
+  );
 }
