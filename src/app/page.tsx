@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { SceneContainer } from "@/three/scenes/HeroScene";
-import { Navbar } from "@/shared/components/Navbar";
+import SceneContainer from "../three/components/SceneContainer";
+import { Navbar } from "../shared/components/Navbar";
 import { Sparkles, ShieldCheck, UserCheck, Compass, ArrowRight, X } from "lucide-react";
 import { supabase } from "./dashboard/supabaseClient";
 

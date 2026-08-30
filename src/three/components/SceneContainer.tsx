@@ -23,7 +23,7 @@ function SceneContents() {
  * - Reduced motion: renders 1 frame then stops
  * - Camera placement
  */
-export default function SceneContainer() {
+export function SceneContainer() {
     const [reducedMotion, setReducedMotion] = useState(false);
 
     useEffect(() => {
@@ -62,3 +62,5 @@ export default function SceneContainer() {
         </Canvas>
     );
 }
+
+export default SceneContainer;
