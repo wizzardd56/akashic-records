@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import SceneContainer from "../three/components/SceneContainer";
-import { Navbar } from "../shared/components/Navbar";
+import { SceneContainer } from "../three/components/SceneContainer";
 import { Sparkles, ShieldCheck, UserCheck, Compass, ArrowRight, X } from "lucide-react";
 import { supabase } from "./dashboard/supabaseClient";
 
@@ -46,8 +45,6 @@ export default function LandingPage() {
 
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-background text-foreground flex flex-col">
-      <Navbar />
-
       {/* Hero Section */}
       <div className="relative flex-1 flex flex-col items-center justify-center px-6 text-center z-10 py-20">
         <div className="absolute inset-0 -z-10 opacity-70">
