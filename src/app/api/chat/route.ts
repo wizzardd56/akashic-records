@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-
-// THIS IS THE MAGIC LINE: Bypasses Vercel's strict 10-second timeout!
-export const runtime = "edge";
+import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: Request) {
     try {
@@ -11,70 +9,73 @@ export async function POST(req: Request) {
         const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
         if (!apiKey) {
-            return NextResponse.json({ reply: "API Key missing from environment variables." });
+            return NextResponse.json({
+                reply: "Error: GEMINI_API_KEY is missing from your Vercel Environment Variables. Please add it in your Vercel dashboard!"
+            });
         }
 
-        let parts: any[] = [];
-        const safeSource = sourceContent || "";
+        const ai = new GoogleGenAI({ apiKey });
+        let contents: any = [];
 
-        // 1. Handle Multimodal Files (Base64)
+        // Handle File Uploads (PDFs, TXTs, etc.) via Multimodal Base64
         if (fileData && mimeType) {
             const base64Data = fileData.includes(",") ? fileData.split(",")[1] : fileData;
-            let safeMimeType = "text/plain";
+            let instruction = "Provide a comprehensive, professional summary of this document for a government statistical officer under MoSPI.";
 
-            if (mimeType.includes("pdf")) safeMimeType = "application/pdf";
-            else if (mimeType.includes("csv")) safeMimeType = "text/csv";
-            else if (mimeType.includes("html")) safeMimeType = "text/html";
+            if (mode === "quiz") {
+                instruction = "Generate 1 clear multiple-choice question with 3 options based on this document.";
+            } else if (prompt) {
+                instruction = prompt;
+            }
 
-            let instruction = prompt || "Analyze this document.";
-            if (mode === "summary") instruction = "Provide a comprehensive, professional summary of this document.";
-            if (mode === "quiz") instruction = "Generate one multiple-choice question with 3 options based on this document.";
-
-            parts = [
-                { text: instruction },
-                { inlineData: { mimeType: safeMimeType, data: base64Data } }
+            contents = [
+                {
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: base64Data
+                    }
+                },
+                {
+                    text: instruction
+                }
             ];
         } else {
-            // 2. Handle Text Prompts & Chat
-            let finalPrompt = prompt || (messages ? messages[messages.length - 1].content : "Hello");
-
-            if (mode === "summary") {
-                finalPrompt = `Summarize this text concisely:\n\n${safeSource.substring(0, 15000)}`;
-            } else if (mode === "quiz") {
-                finalPrompt = `Generate a quiz question from this text:\n\n${safeSource.substring(0, 15000)}`;
-            } else if (safeSource) {
-                finalPrompt = `Document Context:\n${safeSource.substring(0, 15000)}\n\nUser Question:\n${finalPrompt}`;
+            // Handle Text Prompts, Copilot Drawer, and Source Q&A
+            let promptText = "";
+            if (sourceContent || mode) {
+                const latestPrompt = prompt || "Analyze this source";
+                if (mode === "summary") {
+                    promptText = `You are an expert document summarizer for MoSPI. Provide a detailed, professional summary of the following document source:\n\n${sourceContent}`;
+                } else if (mode === "quiz") {
+                    promptText = `You are an expert quiz generator. Generate a clear multiple-choice question with 3 options based on this source text:\n\n${sourceContent}`;
+                } else {
+                    promptText = `You are an expert AI assistant for MoSPI analyzing source documents. Context / Source Material: "${sourceContent}"\n\nUser Query: ${latestPrompt}`;
+                }
             } else {
-                finalPrompt = `You are a helpful AI assistant for MoSPI. USER QUESTION:\n${finalPrompt}`;
+                const latestMessage = (messages && messages.length > 0)
+                    ? (messages[messages.length - 1]?.content || "Hello")
+                    : (prompt || "Hello");
+
+                promptText = `You are Akashic Copilot, an elite AI assistant for India's Official Statistical System under MoSPI (Ministry of Statistics and Programme Implementation) for SIH 26101. Provide precise, professional, and insightful answers regarding statistical data, sampling, CPI/IIP calculations, GVA modeling, and data pipelines. User query: ${latestMessage}`;
             }
 
-            parts = [{ text: finalPrompt }];
+            contents = promptText;
         }
 
-        // 3. Raw Fetch to Gemini 1.5 Flash (Most stable multimodal model)
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ role: "user", parts }]
-                })
-            }
-        );
+        // Updated to latest recommended model: gemini-3.6-flash
+        const response = await ai.models.generateContent({
+            model: "gemini-3.6-flash",
+            contents: contents,
+        });
 
-        if (!response.ok) {
-            const errorData = await response.text();
-            return NextResponse.json({ reply: `Google API Error: ${errorData}` });
-        }
-
-        const data = await response.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Processed successfully, but response was empty.";
-
+        const reply = response.text || "Gemini generated an empty response.";
         return NextResponse.json({ reply });
 
     } catch (error: any) {
-        console.error("Server Error:", error);
-        return NextResponse.json({ reply: `Server Crash: ${error.message}` });
+        console.error("Gemini API SDK Error:", error);
+        return NextResponse.json(
+            { reply: `Gemini API Error: ${error.message || "Failed to process request."}` },
+            { status: 200 }
+        );
     }
 }
