@@ -3,100 +3,63 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { messages, prompt, sourceContent, fileData, mimeType, mode } = body;
+        const { messages, prompt, sourceContent, mode } = body;
 
         const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
         if (!apiKey) {
-            return NextResponse.json({
-                reply: "Error: GEMINI_API_KEY is missing from your Vercel Environment Variables."
-            });
+            return NextResponse.json({ reply: "API Key missing from environment variables." });
         }
 
-        let parts: any[] = [];
+        // 1. Determine the user's actual question
+        const userText = prompt || (messages && messages.length > 0 ? messages[messages.length - 1].content : "Hello");
+        const safeSource = sourceContent || "";
 
-        // 1. Handle Multimodal File Uploads (PDFs, TXTs, CSVs)
-        if (fileData && mimeType) {
-            const base64Data = fileData.includes(",") ? fileData.split(",")[1] : fileData;
+        // 2. Build a strictly text-based prompt (Zero-crash method)
+        let finalPrompt = "";
 
-            // Gemini throws INVALID_ARGUMENT if the mimeType isn't perfectly matched.
-            // We force all unsupported types to 'text/plain' to guarantee it parses.
-            let safeMimeType = "text/plain";
-            if (mimeType.includes("pdf")) safeMimeType = "application/pdf";
-            else if (mimeType.includes("csv")) safeMimeType = "text/csv";
-            else if (mimeType.includes("html")) safeMimeType = "text/html";
-            else if (mimeType.includes("xml")) safeMimeType = "text/plain";
+        if (mode === "summary") {
+            finalPrompt = `Summarize this text concisely:\n\n${safeSource.substring(0, 15000)}`;
+        } else if (mode === "quiz") {
+            finalPrompt = `Generate one multiple-choice question with 3 options based on this text:\n\n${safeSource.substring(0, 15000)}`;
+        } else if (safeSource.trim().length > 0 && !safeSource.startsWith("data:")) {
+            finalPrompt = `You are an AI assistant analyzing a document.\n\nDOCUMENT TEXT:\n${safeSource.substring(0, 15000)}\n\nUSER QUESTION:\n${userText}`;
+        } else {
+            finalPrompt = `You are a helpful AI assistant for MoSPI. USER QUESTION:\n${userText}`;
+        }
 
-            let instruction = "Provide a comprehensive, professional summary of this document for a government statistical officer under MoSPI.";
-
-            if (mode === "quiz") {
-                instruction = "Generate 1 clear multiple-choice question with 3 options based on this document.";
-            } else if (prompt) {
-                instruction = prompt;
-            }
-
-            parts = [
-                { text: instruction },
+        // 3. The exact, strict schema Gemini 3.6 Flash demands for text
+        const payload = {
+            contents: [
                 {
-                    inlineData: {
-                        mimeType: safeMimeType,
-                        data: base64Data
-                    }
+                    role: "user",
+                    parts: [{ text: finalPrompt }]
                 }
-            ];
-        }
-        // 2. Handle Text Prompts, Copilot Drawer, and Source Q&A
-        else {
-            let promptText = "";
-            if (sourceContent || mode) {
-                const latestPrompt = prompt || "Analyze this source";
-                if (mode === "summary") {
-                    promptText = `You are an expert document summarizer. Summarize this:\n\n${sourceContent}`;
-                } else if (mode === "quiz") {
-                    promptText = `Generate a clear multiple-choice question with 3 options based on this text:\n\n${sourceContent}`;
-                } else {
-                    promptText = `Context / Source Material: "${sourceContent}"\n\nUser Query: ${latestPrompt}`;
-                }
-            } else {
-                const latestMessage = (messages && messages.length > 0)
-                    ? (messages[messages.length - 1]?.content || "Hello")
-                    : (prompt || "Hello");
+            ]
+        };
 
-                promptText = `You are an elite AI assistant for MoSPI. User query: ${latestMessage}`;
-            }
-
-            parts = [{ text: promptText }];
-        }
-
-        // 3. Raw REST API Call (Bypassing SDK completely for 100% stability)
+        // 4. Raw REST call
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: parts }]
-                })
+                body: JSON.stringify(payload)
             }
         );
 
         const data = await response.json();
 
         if (!response.ok) {
-            console.error("Gemini REST API Error:", data);
-            return NextResponse.json({
-                reply: `API Error: ${data.error?.message || "Failed to process request."}`
-            });
+            console.error("Gemini API Error:", data);
+            return NextResponse.json({ reply: `API Error: ${data.error?.message || "Unknown error"}` });
         }
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Gemini generated an empty response.";
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I processed the request, but the response was empty.";
         return NextResponse.json({ reply });
 
     } catch (error: any) {
         console.error("Server Error:", error);
-        return NextResponse.json(
-            { reply: `Server Error: ${error.message}` },
-            { status: 200 }
-        );
+        return NextResponse.json({ reply: `Server Crash: ${error.message}` });
     }
 }
