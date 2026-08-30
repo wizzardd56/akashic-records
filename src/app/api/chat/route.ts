@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         const ai = new GoogleGenAI({ apiKey });
         let contents: any;
 
-        // Handle File Uploads (PDFs, TXTs, etc.) via Multimodal Base64 with correct SDK structure
+        // Handle File Uploads (PDFs, TXTs, etc.) via Multimodal Base64
         if (fileData && mimeType) {
             const base64Data = fileData.includes(",") ? fileData.split(",")[1] : fileData;
             let instruction = "Provide a comprehensive, professional summary of this document for a government statistical officer under MoSPI.";
@@ -28,21 +28,15 @@ export async function POST(req: Request) {
                 instruction = prompt;
             }
 
+            // Correct SDK schema for inline data + prompt string
             contents = [
                 {
-                    role: "user",
-                    parts: [
-                        {
-                            inlineData: {
-                                mimeType: mimeType,
-                                data: base64Data
-                            }
-                        },
-                        {
-                            text: instruction
-                        }
-                    ]
-                }
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: mimeType
+                    }
+                },
+                instruction
             ];
         } else {
             // Handle Text Prompts, Copilot Drawer, and Source Q&A
