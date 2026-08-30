@@ -11,9 +11,9 @@ import {
     BrainCircuit,
     Send,
     Award,
-    CheckCircle2,
     Upload,
-    X
+    X,
+    FileUp
 } from "lucide-react";
 
 interface Source {
@@ -33,7 +33,7 @@ export default function NotebookPage() {
         },
         {
             id: "2",
-            title: "Index of Industrial Production (IIF) Framework",
+            title: "Index of Industrial Production (IIP) Framework",
             content: "IIP tracks manufacturing, mining, and electricity sectors across 3 sectors with monthly telemetry updates.",
             summary: "A short-term indicator of industrial growth compiled monthly using data from source agencies like DIPP, CEA, and mineral bureaus."
         }
@@ -45,19 +45,35 @@ export default function NotebookPage() {
     const [newContent, setNewContent] = useState("");
     const [chatQuery, setChatQuery] = useState("");
     const [chatLog, setChatLog] = useState<{ role: "user" | "ai"; text: string }[]>([
-        { role: "ai", text: "Welcome to Akashic NotebookLM Workspace. Ask me anything or upload your study material to analyze and generate quizzes!" }
+        { role: "ai", text: "Welcome to Akashic NotebookLM Workspace. Upload documents from your device or paste study material to analyze and chat!" }
     ]);
     const [quizModalOpen, setQuizModalOpen] = useState(false);
     const [quizScore, setQuizScore] = useState<number | null>(null);
 
     const activeSource = sources.find((s) => s.id === activeSourceId) || sources[0];
 
-    // Handle File / Text Upload
+    // Handle File Selection from Device
+    const handleDeviceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Auto-set title from filename (removing extension)
+        setNewTitle(file.name.replace(/\.[^/.]+$/, ""));
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const textContent = event.target?.result as string;
+            setNewContent(textContent || "");
+        };
+        reader.readAsText(file);
+    };
+
+    // Handle Adding Source
     const handleAddSource = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTitle || !newContent) return;
 
-        const generatedSummary = `AI Summary: ${newContent.slice(0, 150)}... [Analyzed & indexed successfully for Q&A and quiz generation].`;
+        const generatedSummary = `AI Summary: ${newContent.slice(0, 160)}... [Successfully indexed from device upload for Q&A and quiz generation].`;
         const newSrc: Source = {
             id: Date.now().toString(),
             title: newTitle,
@@ -81,22 +97,41 @@ export default function NotebookPage() {
         }
     };
 
-    // Handle Chat Q&A over Active Source
-    const handleSendChat = (e: React.FormEvent) => {
+    // Handle Chat Q&A via Gemini API
+    const handleSendChat = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!chatQuery.trim()) return;
 
         const userMsg = chatQuery;
         setChatQuery("");
         setChatLog(prev => [...prev, { role: "user", text: userMsg }]);
+        setChatLog(prev => [...prev, { role: "ai", text: "Analyzing document source..." }]);
 
-        setTimeout(() => {
-            let aiReply = `Based on your loaded source "${activeSource?.title}", here is what you need to know: ${activeSource?.content.slice(0, 200)}... This directly answers your query regarding "${userMsg}".`;
-            if (userMsg.toLowerCase().includes("summary")) {
-                aiReply = `Summary of "${activeSource?.title}": ${activeSource?.summary}`;
-            }
-            setChatLog(prev => [...prev, { role: "ai", text: aiReply }]);
-        }, 600);
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    prompt: userMsg,
+                    sourceContent: activeSource?.content || "",
+                    mode: "chat"
+                })
+            });
+
+            const data = await res.json();
+
+            setChatLog(prev => {
+                const copy = [...prev];
+                copy.pop(); // remove loading message
+                return [...copy, { role: "ai", text: data.reply || data.error || "No response generated." }];
+            });
+        } catch {
+            setChatLog(prev => {
+                const copy = [...prev];
+                copy.pop();
+                return [...copy, { role: "ai", text: `Based on your active source "${activeSource?.title}": ${activeSource?.content.slice(0, 250)}...` }];
+            });
+        }
     };
 
     return (
@@ -244,7 +279,7 @@ export default function NotebookPage() {
                 </div>
             </div>
 
-            {/* Upload Modal */}
+            {/* Upload Modal with Device File Picker */}
             {isUploadModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn">
                     <div className="relative w-full max-w-lg rounded-3xl border border-accent/40 bg-surface/90 p-8 shadow-2xl backdrop-blur-2xl">
@@ -256,10 +291,30 @@ export default function NotebookPage() {
                             <X size={20} />
                         </button>
 
-                        <h2 className="text-xl font-bold tracking-tight mb-2">Upload Study Material or Document</h2>
-                        <p className="text-xs text-muted mb-6">Paste your document text or study notes to instantly index, summarize, and generate quizzes.</p>
+                        <h2 className="text-xl font-bold tracking-tight mb-2">Upload Document or Study Material</h2>
+                        <p className="text-xs text-muted mb-6">Select a file from your device or paste text to instantly index, summarize, and generate quizzes.</p>
 
                         <form onSubmit={handleAddSource} className="space-y-4">
+                            {/* Device File Upload Section */}
+                            <div>
+                                <label className="block text-xs font-semibold text-accent mb-1 flex items-center gap-1.5">
+                                    <FileUp size={14} />
+                                    <span>Upload File from Device (.txt, .md, .json, .csv)</span>
+                                </label>
+                                <input
+                                    type="file"
+                                    accept=".txt,.md,.json,.csv"
+                                    onChange={handleDeviceFileSelect}
+                                    className="w-full rounded-xl border border-accent/40 bg-background px-4 py-2.5 text-xs text-foreground file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30 cursor-pointer shadow-inner"
+                                />
+                            </div>
+
+                            <div className="relative flex py-1 items-center">
+                                <div className="flex-grow border-t border-border"></div>
+                                <span className="flex-shrink mx-4 text-[10px] text-muted uppercase font-semibold">Or Edit Details Manually</span>
+                                <div className="flex-grow border-t border-border"></div>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-semibold text-muted mb-1">Document Title</label>
                                 <input
@@ -275,11 +330,11 @@ export default function NotebookPage() {
                             <div>
                                 <label className="block text-xs font-semibold text-muted mb-1">Document Content / Study Notes</label>
                                 <textarea
-                                    rows={6}
-                                    placeholder="Paste study material, notes, or policy guidelines here..."
+                                    rows={5}
+                                    placeholder="File contents will appear here automatically, or you can paste text directly..."
                                     value={newContent}
                                     onChange={(e) => setNewContent(e.target.value)}
-                                    className="w-full rounded-xl border border-border bg-background p-4 text-xs text-foreground focus:border-accent outline-none resize-none"
+                                    className="w-full rounded-xl border border-border bg-background p-4 text-xs text-foreground focus:border-accent outline-none resize-none font-mono"
                                     required
                                 />
                             </div>
@@ -317,13 +372,13 @@ export default function NotebookPage() {
                         {quizScore === null ? (
                             <div className="mt-6 text-left space-y-4">
                                 <p className="text-xs font-semibold text-foreground">
-                                    Q: What is the core focus / base indicator benchmark outlined in this source document?
+                                    Q: What is the core focus or primary data index analyzed within this active document?
                                 </p>
                                 <div className="space-y-2">
                                     {[
-                                        "Macroeconomic price indexing and telemetry compilation",
-                                        "Random sampling without demographic metrics",
-                                        "Manual ledger entry without baseline standards"
+                                        `Telemetry, item baskets, and index computation parameters`,
+                                        `Random unregulated baseline metrics`,
+                                        `Unverified regional estimates`
                                     ].map((opt, idx) => (
                                         <button
                                             key={idx}
