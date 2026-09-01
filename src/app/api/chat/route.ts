@@ -5,189 +5,200 @@ interface ChatMessage {
   content: string;
 }
 
-// Models in priority order — first one that works wins
-const GROQ_MODELS = [
-  "gpt-oss-120b",
-  "qwen/qwen3.6-27b",
-  "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant",
-];
-
-// Max characters for source content to avoid Groq token limits
 const MAX_SOURCE_CHARS = 12000;
 
 function buildSystemPrompt(courseId: string | null): string {
   const courseContext = courseId
-    ? `The user is studying "${courseId}". Tailor all responses, examples, and quiz questions to be relevant and age-appropriate for this course/board.`
+    ? `The user is studying "${courseId}". Tailor all responses to be relevant for this course/board.`
     : "";
 
-  return `You are Akashic Copilot, an elite AI tutor and knowledge assistant for India's Official Statistical System under MoSPI (Ministry of Statistics and Programme Implementation) for SIH 26101. ${courseContext}
+  return `You are Akashic Copilot, an elite AI tutor for India's Official Statistical System under MoSPI (SIH 26101). ${courseContext}
 
-You help with:
-- Statistical methodologies (sampling, CPI/IIP, GVA modeling, SNA 2008)
-- Document analysis, summarization, and key insight extraction
-- Generating quiz questions and practice MCQs from study material
-- Answering follow-up questions about uploaded documents
-- Providing career guidance related to data science, cybersecurity, and CS fields
-
-Be precise, professional, and insightful. Use clear formatting. When generating quizzes, always provide exactly 3 options per question with a correct answer and explanation.`;
+You help with statistical methodologies, document analysis, quiz generation, and career guidance in data science/CS/cybersecurity. Be precise, professional, and insightful. When generating quizzes, provide exactly 3 options per question with a correct answer and explanation.`;
 }
 
-async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
-  const errors: string[] = [];
-
-  for (const model of GROQ_MODELS) {
-    try {
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.7,
-          max_tokens: 2048,
-        }),
-      });
-
-      if (!response.ok) {
-        const errBody = await response.text().catch(() => "unknown");
-        const detail = `${model}: ${response.status} - ${errBody.slice(0, 100)}`;
-        errors.push(detail);
-        console.warn(`Groq model ${model} failed:`, detail);
-        continue; // try next model
-      }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-      if (content) return content;
-      errors.push(`${model}: returned empty content`);
-    } catch (e: any) {
-      const detail = `${model}: ${e.message || "network error"}`;
-      errors.push(detail);
-      console.warn(`Groq model ${model} error:`, detail);
-      continue;
-    }
-  }
-
-  // All models failed — return detailed error
-  const errorList = errors.join("\n");
-  throw new Error(`All Groq models failed. Details:\n${errorList}`);
-}
-
-/** Truncate source content to avoid token limits */
 function truncateSource(content: string): string {
   if (content.length <= MAX_SOURCE_CHARS) return content;
   return content.slice(0, MAX_SOURCE_CHARS) + "\n\n[Document truncated due to length]";
 }
 
-/** Validate and sanitize incoming request body */
-function parseRequestBody(body: any): {
-  messages?: any[];
-  prompt?: string;
-  sourceContent?: string;
-  mode?: string;
-  courseId?: string;
-} {
-  if (!body || typeof body !== "object") {
-    throw new Error("Request body must be a JSON object");
-  }
+/* ─── Groq ──────────────────────────────────────────────────────── */
+const GROQ_MODELS = ["gpt-oss-120b", "qwen/qwen3.6-27b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
 
-  return {
-    messages: Array.isArray(body.messages) ? body.messages : undefined,
-    prompt: typeof body.prompt === "string" ? body.prompt : undefined,
-    sourceContent: typeof body.sourceContent === "string" ? truncateSource(body.sourceContent) : undefined,
-    mode: typeof body.mode === "string" ? body.mode : undefined,
-    courseId: typeof body.courseId === "string" ? body.courseId : undefined,
-  };
+async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
+  for (const model of GROQ_MODELS) {
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 2048 }),
+      });
+      if (!res.ok) { console.warn(`Groq ${model}: ${res.status}`); continue; }
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content) return content;
+    } catch (e: any) { console.warn(`Groq ${model}:`, e.message); continue; }
+  }
+  throw new Error("Groq: all models failed or unavailable");
 }
 
+/* ─── OpenAI ────────────────────────────────────────────────────── */
+const OPENAI_MODELS = ["gpt-4o-mini", "gpt-3.5-turbo"];
+
+async function callOpenAI(apiKey: string, messages: ChatMessage[]): Promise<string> {
+  for (const model of OPENAI_MODELS) {
+    try {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 2048 }),
+      });
+      if (!res.ok) { console.warn(`OpenAI ${model}: ${res.status}`); continue; }
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content) return content;
+    } catch (e: any) { console.warn(`OpenAI ${model}:`, e.message); continue; }
+  }
+  throw new Error("OpenAI: all models failed or unavailable");
+}
+
+/* ─── Gemini ────────────────────────────────────────────────────── */
+async function callGemini(apiKey: string, messages: ChatMessage[]): Promise<string> {
+  let systemInstruction = "";
+  const contents: { role: string; parts: { text: string }[] }[] = [];
+
+  for (const msg of messages) {
+    if (msg.role === "system") {
+      systemInstruction = msg.content;
+    } else {
+      contents.push({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      });
+    }
+  }
+
+  if (contents.length > 0 && contents[0].role !== "user") {
+    contents.unshift({ role: "user", parts: [{ text: "Hello" }] });
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const body: any = {
+    contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+  };
+  if (systemInstruction) {
+    body.systemInstruction = { parts: [{ text: systemInstruction }] };
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "unknown");
+    throw new Error(`Gemini ${res.status}: ${err.slice(0, 150)}`);
+  }
+  const data = await res.json();
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (content) return content;
+  throw new Error("Gemini returned empty response");
+}
+
+/* ─── Main handler ──────────────────────────────────────────────── */
 export async function POST(req: Request) {
   try {
-    // Parse request body with error handling
     let body: any;
     try {
       body = await req.json();
     } catch {
-      return Response.json(
-        { reply: "Error: Invalid JSON in request body. Please check your request format." },
-        { status: 400 }
-      );
+      return Response.json({ reply: "Error: Invalid JSON in request body." }, { status: 400 });
     }
 
-    const { messages, prompt, sourceContent, mode, courseId } = parseRequestBody(body);
+    if (!body || typeof body !== "object") {
+      return Response.json({ reply: "Error: Request body must be a JSON object." }, { status: 400 });
+    }
 
-    // Validate API key
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
+    const messages = Array.isArray(body.messages) ? body.messages : undefined;
+    const prompt = typeof body.prompt === "string" ? body.prompt : undefined;
+    const sourceContent = typeof body.sourceContent === "string" ? truncateSource(body.sourceContent) : undefined;
+    const mode = typeof body.mode === "string" ? body.mode : undefined;
+    const courseId = typeof body.courseId === "string" ? body.courseId : undefined;
+
+    const groqKey = process.env.GROQ_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!groqKey && !openaiKey && !geminiKey) {
       return Response.json({
-        reply: "Error: GROQ_API_KEY is not configured. Please add it to your .env.local file:\n\nGROQ_API_KEY=your_key_here\n\nGet a free key at https://console.groq.com/keys"
+        reply: "Error: No API keys configured. Add GROQ_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY to .env.local"
       });
     }
 
+    // Build messages
     const systemPrompt = buildSystemPrompt(courseId || null);
     const chatMessages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
 
     if (mode === "summary" && sourceContent) {
       chatMessages.push({
         role: "user",
-        content: `Summarize this document in 2-3 sentences. Be brief and concise. Only mention the most important points.\n\n${sourceContent}`
+        content: `Summarize this document in 2-3 sentences. Be brief and concise.\n\n${sourceContent}`
       });
     } else if (mode === "quiz" && sourceContent) {
-      const quizPrompt = prompt || `Generate 3 challenging multiple-choice questions based strictly on this document. For each question, use this exact format:
-
-QUESTION: [question text]
-OPTION A: [first option]
-OPTION B: [second option]
-OPTION C: [third option]
-CORRECT: [A, B, or C]
-EXPLANATION: [brief explanation]
-
-Repeat for all 3 questions. Make them progressively harder.`;
-      chatMessages.push({
-        role: "user",
-        content: `${quizPrompt}\n\nDocument content:\n${sourceContent}`
-      });
+      const quizPrompt = prompt || `Generate 3 MCQs based on this document. Format each as:\nQUESTION: [text]\nOPTION A: [text]\nOPTION B: [text]\nOPTION C: [text]\nCORRECT: [A/B/C]\nEXPLANATION: [text]\nMake them progressively harder.`;
+      chatMessages.push({ role: "user", content: `${quizPrompt}\n\nDocument:\n${sourceContent}` });
     } else if (mode === "chat" && sourceContent) {
       const userQuery = prompt || "Summarize this document";
       chatMessages.push({
         role: "user",
-        content: `You have been given a document as context. Answer the user's question based on this document.\n\n--- DOCUMENT ---\n${sourceContent}\n--- END DOCUMENT ---\n\nUser Question: ${userQuery}`
+        content: `Answer based on this document:\n\n--- DOCUMENT ---\n${sourceContent}\n--- END ---\n\nQuestion: ${userQuery}`
       });
     } else if (messages && messages.length > 0) {
-      // Multi-message conversation (copilot) — only include last 10 messages to stay within token limits
-      const recentMessages = messages.slice(-10);
-      for (const msg of recentMessages) {
+      const recent = messages.slice(-10);
+      for (const msg of recent) {
         const role = (msg.role === "assistant" || msg.role === "system") ? msg.role : "user";
         const content = msg.content || msg.text || "";
-        if (content.trim()) {
-          chatMessages.push({ role, content });
-        }
+        if (content.trim()) chatMessages.push({ role, content });
       }
     } else {
-      chatMessages.push({
-        role: "user",
-        content: prompt || "Hello, introduce yourself briefly."
-      });
+      chatMessages.push({ role: "user", content: prompt || "Hello, introduce yourself briefly." });
     }
 
-    // Validate we have at least one user message
-    const hasUserMessage = chatMessages.some(m => m.role === "user");
-    if (!hasUserMessage) {
-      return Response.json({
-        reply: "Error: No valid message content provided. Please enter a question or upload a document."
-      });
+    if (!chatMessages.some(m => m.role === "user")) {
+      return Response.json({ reply: "Error: No valid message provided." });
     }
 
-    const reply = await callGroq(apiKey, chatMessages);
-    return Response.json({ reply });
+    // Try providers in order: Groq → OpenAI → Gemini
+    const errors: string[] = [];
+
+    if (groqKey) {
+      try {
+        const reply = await callGroq(groqKey, chatMessages);
+        return Response.json({ reply, provider: "Groq" });
+      } catch (e: any) { errors.push(`Groq: ${e.message}`); }
+    }
+
+    if (openaiKey) {
+      try {
+        const reply = await callOpenAI(openaiKey, chatMessages);
+        return Response.json({ reply, provider: "OpenAI" });
+      } catch (e: any) { errors.push(`OpenAI: ${e.message}`); }
+    }
+
+    if (geminiKey) {
+      try {
+        const reply = await callGemini(geminiKey, chatMessages);
+        return Response.json({ reply, provider: "Gemini" });
+      } catch (e: any) { errors.push(`Gemini: ${e.message}`); }
+    }
+
+    return Response.json({
+      reply: `All AI providers failed:\n\n${errors.join("\n\n")}\n\nPlease check your API keys in .env.local.`
+    });
 
   } catch (error: any) {
     console.error("API Route Error:", error);
-    return Response.json({
-      reply: `Error: ${error.message || "Failed to process request."}`
-    });
+    return Response.json({ reply: `Error: ${error.message || "Failed to process request."}` });
   }
 }
