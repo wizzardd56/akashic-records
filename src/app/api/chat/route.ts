@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     if (mode === "summary" && sourceContent) {
       chatMessages.push({
         role: "user",
-        content: `Provide a comprehensive, professional summary of the following document. Highlight key concepts, data points, and actionable insights:\n\n${sourceContent}`
+        content: `Summarize this document in 2-3 sentences. Be brief and concise. Only mention the most important points.\n\n${sourceContent}`
       });
     } else if (mode === "quiz" && sourceContent) {
       const quizPrompt = prompt || `Generate 3 challenging multiple-choice questions based strictly on this document. For each question, use this exact format:

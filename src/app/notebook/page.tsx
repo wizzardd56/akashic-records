@@ -29,16 +29,9 @@ interface Source {
 }
 
 export default function NotebookPage() {
-    const [sources, setSources] = useState<Source[]>([
-        {
-            id: "1",
-            title: "MoSPI Guidelines on Consumer Price Index (CPI)",
-            content: "The Consumer Price Index measures changes in the price level of market basket of consumer goods and services purchased by households. Base year is 2012.",
-            summary: "Covers retail inflation tracking, item baskets, weighting diagrams, and Jevons geometric mean formulas used across rural and urban sectors."
-        }
-    ]);
+    const [sources, setSources] = useState<Source[]>([]);
 
-    const [activeSourceId, setActiveSourceId] = useState<string>("1");
+    const [activeSourceId, setActiveSourceId] = useState<string>("");
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [newTitle, setNewTitle] = useState("");
     const [newContent, setNewContent] = useState("");
@@ -48,7 +41,7 @@ export default function NotebookPage() {
 
     const [chatQuery, setChatQuery] = useState("");
     const [chatLog, setChatLog] = useState<{ role: "user" | "ai"; text: string }[]>([
-        { role: "ai", text: "Welcome to Akashic AI Chatbox Workspace. Upload any PDF, TXT, or document from your device to trigger deep AI analysis and summarization!" }
+        { role: "ai", text: "Welcome to AI Chatbox. Upload a document to get a quick summary, then chat with it!" }
     ]);
     const [quizModalOpen, setQuizModalOpen] = useState(false);
     const [quizScore, setQuizScore] = useState<number | null>(null);
@@ -60,7 +53,7 @@ export default function NotebookPage() {
         explanation: string;
     } | null>(null);
 
-    const activeSource = sources.find((s) => s.id === activeSourceId) || sources[0];
+    const activeSource = sources.find((s) => s.id === activeSourceId) || null;
 
     // AI Quiz Generation from Source
     const handleGenerateQuiz = async () => {
@@ -286,7 +279,7 @@ EXPLANATION: [brief explanation]`
                             Active Sources ({sources.length})
                         </h3>
                         <span className="text-[10px] text-accent bg-accent/10 px-2 py-0.5 rounded-full font-semibold">
-                            Gemini Multimodal
+                            Groq LLM
                         </span>
                     </div>
 
@@ -327,13 +320,17 @@ EXPLANATION: [brief explanation]`
                             <BrainCircuit size={120} className="text-accent" />
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-widest text-accent bg-accent/15 px-2.5 py-1 rounded-full">
-                            Deep AI Document Analysis
+                            AI Document Summary
                         </span>
-                        <h2 className="text-xl font-bold mt-2 text-foreground">{activeSource?.title}</h2>
-                        <div className="text-xs text-muted mt-3 leading-relaxed bg-background/50 p-4 rounded-xl border border-border whitespace-pre-wrap max-h-60 overflow-y-auto">
-                            <strong className="text-accent block mb-1">Gemini Comprehensive Summary:</strong>
-                            {activeSource?.summary}
-                        </div>
+                        <h2 className="text-xl font-bold mt-2 text-foreground">{activeSource?.title || "No Source Selected"}</h2>
+                        {activeSource?.summary ? (
+                            <div className="text-xs text-muted mt-3 leading-relaxed bg-background/50 p-4 rounded-xl border border-border whitespace-pre-wrap max-h-40 overflow-y-auto">
+                                <strong className="text-accent block mb-1">Summary:</strong>
+                                {activeSource.summary}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-white/30 mt-3">Upload a document to see its summary here.</p>
+                        )}
 
                         <div className="flex items-center gap-3 mt-4">
                             <button
@@ -376,14 +373,15 @@ EXPLANATION: [brief explanation]`
                         <form onSubmit={handleSendChat} className="flex gap-2">
                             <input
                                 type="text"
-                                placeholder={`Ask questions about "${activeSource?.title}"...`}
+                                placeholder={activeSource ? `Ask about "${activeSource.title}"...` : "Upload a document first, then ask questions..."}
                                 value={chatQuery}
                                 onChange={(e) => setChatQuery(e.target.value)}
                                 className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-xs text-foreground focus:border-accent outline-none"
                             />
                             <button
                                 type="submit"
-                                className="rounded-xl bg-accent px-5 py-3 text-background font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center shadow-md"
+                                disabled={!activeSource}
+                                className="rounded-xl bg-accent px-5 py-3 text-background font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <Send size={16} />
                             </button>
@@ -405,7 +403,7 @@ EXPLANATION: [brief explanation]`
                         </button>
 
                         <h2 className="text-xl font-bold tracking-tight mb-2">Upload Document (PDF, TXT, MD, CSV)</h2>
-                        <p className="text-xs text-muted mb-6">Select a file from your device. Gemini will take its time to read, analyze, and construct a deep professional summary.</p>
+                        <p className="text-xs text-muted mb-6">Upload a file to get a quick summary and chat with it.</p>
 
                         <form onSubmit={handleAddSource} className="space-y-4">
                             <div>
@@ -439,7 +437,7 @@ EXPLANATION: [brief explanation]`
                                 className="w-full rounded-xl bg-accent py-3 text-xs font-bold text-background hover:opacity-90 transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
                             >
                                 <Upload size={16} />
-                                <span>Upload & Generate Deep AI Summary</span>
+                                <span>Upload & Summarize</span>
                             </button>
                         </form>
                     </div>
