@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKASHIC RECORDS — SIH 2026 Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL RESET & BASE
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #030712;
+  --bg-card: #0b0f19;
+  --bg-card-alt: #0d1320;
+  --cyan: #00f3ff;
+  --cyan-dim: rgba(0,243,255,0.15);
+  --cyan-glow: rgba(0,243,255,0.4);
+  --cyan-bright: #00f3ff;
+  --magenta: #ff00e5;
+  --magenta-dim: rgba(255,0,229,0.12);
+  --purple: #a855f7;
+  --green: #00ff88;
+  --amber: #ffb800;
+  --red: #ff3366;
+  --text-primary: #e8edf5;
+  --text-secondary: #8892a8;
+  --text-dim: #4a5568;
+  --border: rgba(0,243,255,0.12);
+  --grid-color: rgba(0,243,255,0.04);
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATED BACKGROUND — Grid + Particles
+   ═══════════════════════════════════════════════════════════════ */
+#bg-canvas {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.6;
+}
+
+.bg-vignette {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, #030712 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+.slide {
+  position: relative;
+  width: 100%; min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 80px;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.slide::before {
+  content: ''; position: absolute; inset: 0;
+  border-bottom: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Slide number badge */
+.slide-num {
+  position: absolute; top: 30px; right: 40px;
+  font-family: 'Orbitron', monospace; font-size: 0.65rem;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 6px 16px; border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIH HEADER BAR (top of every slide)
+   ═══════════════════════════════════════════════════════════════ */
+.sih-header {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 40px;
+  background: rgba(3,7,18,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.sih-header .sih-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--cyan);
+  text-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.sih-header .sih-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.65rem; font-weight: 500;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: 4px 14px; border-radius: 3px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════ */
+.slide-tag {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 5px; text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 12px;
+  text-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.slide-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 2.4rem; font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #fff 0%, var(--cyan) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.slide-subtitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.05rem; font-weight: 400;
+  color: var(--text-secondary);
+  max-width: 700px; text-align: center;
+  line-height: 1.6;
+}
+
+.section-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55rem; font-weight: 600;
+  letter-spacing: 4px; text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 20px;
+  padding-left: 20px;
+  border-left: 2px solid var(--cyan);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLASS CARD COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.4;
+}
+
+.glass-card:hover {
+  border-color: rgba(0,243,255,0.3);
+  box-shadow: 0 0 30px rgba(0,243,255,0.08), 0 8px 32px rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 1 — TITLE & TEAM
+   ═══════════════════════════════════════════════════════════════ */
+.slide-1 {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(0,243,255,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(168,85,247,0.04) 0%, transparent 50%);
+}
+
+.hero-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 4.2rem; font-weight: 900;
+  letter-spacing: 8px;
+  text-align: center;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #ffffff 0%, #00f3ff 40%, #a855f7 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 40px rgba(0,243,255,0.3));
+}
+
+.hero-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem; font-weight: 400;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.hero-tagline {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 50px;
+  opacity: 0.8;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.team-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.team-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+
+.team-card:hover::after { opacity: 1; }
+.team-card:hover {
+  border-color: rgba(0,243,255,0.25);
+  box-shadow: 0 0 20px rgba(0,243,255,0.06);
+}
+
+.team-card .role {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.5rem; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+
+.team-card.leader .role { color: var(--amber); opacity: 1; }
+.team-card.leader {
+  border-color: rgba(255,184,0,0.2);
+  box-shadow: 0 0 20px rgba(255,184,0,0.05);
+}
+
+.team-card .name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.05rem; font-weight: 600;
+  color: var(--text-primary);
+}
+
+.team-card.leader .name {
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+/* SIH Problem badge under title */
+.problem-badge {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-bottom: 40px;
+  padding: 10px 24px;
+  border: 1px solid rgba(255,184,0,0.2);
+  border-radius: 8px;
+  background: rgba(255,184,0,0.04);
+}
+
+.problem-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.problem-badge span {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.75rem; font-weight: 500;
+  letter-spacing: 1.5px;
+  color: var(--amber);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 2 — FLOWCHART
+   ═══════════════════════════════════════════════════════════════ */
+.slide-2 {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(0,243,255,0.04) 0%, transparent 60%);
+}
+
+.flow-container {
+  display: flex; align-items: flex-start; gap: 0;
+  max-width: 1100px; width: 100%;
+  margin-top: 20px;
+}
+
+.flow-step {
+  flex: 1;
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 10px;
+}
+
+.flow-icon-ring {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  position: relative;
+  z-index: 2;
+  transition: all 0.4s ease;
+  margin-bottom: 18px;
+}
+
+.flow-icon-ring .num {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.4rem; font-weight: 800;
+  color: var(--cyan);
+  text-shadow: 0 0 15px var(--cyan-glow);
+}
+
+.flow-step:hover .flow-icon-ring {
+  border-color: var(--cyan);
+  box-shadow: 0 0 30px var(--cyan-dim), inset 0 0 20px var(--cyan-dim);
+}
+
+.flow-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.flow-desc {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem; font-weight: 400;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+  max-width: 200px;
+}
+
+/* Connector lines */
+.flow-connector {
+  flex: 0 0 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cyan), rgba(0,243,255,0.2));
+  margin-top: 40px;
+  position: relative;
+}
+
+.flow-connector::after {
+  content: '▸'; position: absolute; right: -6px; top: -10px;
+  color: var(--cyan); font-size: 0.8rem;
+  text-shadow: 0 0 8px var(--cyan-glow);
+}
+
+/* Tech badges in flowchart */
+.flow-tech-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: rgba(0,243,255,0.03);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 3 — ADAPTIVE LEARNING
+   ═══════════════════════════════════════════════════════════════ */
+.slide-3 {
+  background:
+    radial-gradient(ellipse at 20% 60%, rgba(168,85,247,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(0,255,136,0.03) 0%, transparent 50%);
+}
+
+.adapt-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 30px;
+  max-width: 1100px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.course-path-list {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.course-path {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.course-path:hover {
+  border-color: rgba(0,243,255,0.25);
+  background: var(--bg-card-alt);
+}
+
+.course-path .cp-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.course-path .cp-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem; font-weight: 600;
+  color: var(--text-primary);
+}
+
+.course-path .cp-tag {
+  margin-left: auto;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem; font-weight: 400;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.cp-school .cp-icon { background: rgba(0,243,255,0.08); }
+.cp-college .cp-icon { background: rgba(168,85,247,0.08); }
+.cp-uni .cp-icon { background: rgba(0,255,136,0.08); }
+
+.cp-school .cp-tag { color: var(--cyan); border-color: rgba(0,243,255,0.2); background: rgba(0,243,255,0.04); }
+.cp-college .cp-tag { color: var(--purple); border-color: rgba(168,85,247,0.2); background: rgba(168,85,247,0.04); }
+.cp-uni .cp-tag { color: var(--green); border-color: rgba(0,255,136,0.2); background: rgba(0,255,136,0.04); }
+
+/* Right side — adaptive roadmap visualization */
+.roadmap-visual {
+  position: relative;
+}
+
+.competency-bars {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.comp-bar-item .comp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.comp-bar-item .comp-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem; font-weight: 600;
+  color: var(--text-primary);
+}
+
+.comp-bar-item .comp-pct {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.65rem; font-weight: 600;
+  color: var(--cyan);
+}
+
+.comp-track {
+  height: 6px;
+  background: rgba(0,243,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.comp-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--cyan), rgba(0,243,255,0.6));
+  box-shadow: 0 0 12px var(--cyan-dim);
+  transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.comp-fill.purple { background: linear-gradient(90deg, var(--purple), rgba(168,85,247,0.6)); }
+.comp-fill.green { background: linear-gradient(90deg, var(--green), rgba(0,255,136,0.6)); }
+.comp-fill.amber { background: linear-gradient(90deg, var(--amber), rgba(255,184,0,0.6)); }
+
+/* Roadmap Steps */
+.roadmap-steps {
+  margin-top: 24px;
+  display: flex; flex-direction: column; gap: 0;
+  position: relative;
+  padding-left: 24px;
+}
+
+.roadmap-steps::before {
+  content: '';
+  position: absolute; left: 8px; top: 8px; bottom: 8px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--cyan), rgba(0,243,255,0.1));
+}
+
+.rm-step {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 10px 0;
+  position: relative;
+}
+
+.rm-step::before {
+  content: '';
+  position: absolute; left: -20px; top: 14px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan-glow);
+}
+
+.rm-step.locked::before {
+  background: var(--text-dim);
+  box-shadow: none;
+}
+
+.rm-step .rm-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem; font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rm-step.locked .rm-label { color: var(--text-dim); }
+
+.rm-step .rm-sub {
+  font-size: 0.72rem; color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 4 — GAMIFICATION
+   ═══════════════════════════════════════════════════════════════ */
+.slide-4 {
+  background:
+    radial-gradient(ellipse at 60% 40%, rgba(255,0,229,0.04) 0%, transparent 50%);
+}
+
+.gamify-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 1100px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.gamify-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gamify-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+
+.gamify-card.cyan-accent::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+.gamify-card.magenta-accent::before { background: linear-gradient(90deg, transparent, var(--magenta), transparent); }
+.gamify-card.purple-accent::before { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+.gamify-card.green-accent::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+.gamify-card.amber-accent::before { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+.gamify-card.red-accent::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+
+.gamify-card:hover {
+  border-color: rgba(0,243,255,0.2);
+  box-shadow: 0 0 30px rgba(0,243,255,0.06);
+  transform: translateY(-3px);
+}
+
+.gamify-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+
+.gamify-card.cyan-accent .gamify-icon { background: rgba(0,243,255,0.08); }
+.gamify-card.magenta-accent .gamify-icon { background: rgba(255,0,229,0.08); }
+.gamify-card.purple-accent .gamify-icon { background: rgba(168,85,247,0.08); }
+.gamify-card.green-accent .gamify-icon { background: rgba(0,255,136,0.08); }
+.gamify-card.amber-accent .gamify-icon { background: rgba(255,184,0,0.08); }
+.gamify-card.red-accent .gamify-icon { background: rgba(255,51,102,0.08); }
+
+.gamify-card h3 {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.gamify-card p {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Stat badges inside cards */
+.stat-row {
+  display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+}
+
+.stat-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  border: 1px solid var(--border);
+  background: rgba(0,243,255,0.03);
+  color: var(--text-dim);
+}
+
+.stat-badge .stat-val {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 5 — QUIZ & CHATBOT
+   ═══════════════════════════════════════════════════════════════ */
+.slide-5 {
+  background:
+    radial-gradient(ellipse at 40% 70%, rgba(0,255,136,0.04) 0%, transparent 50%);
+}
+
+.quizbot-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1100px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.quiz-panel, .chatbot-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+.quiz-panel::before, .chatbot-panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+
+.quiz-panel::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+.chatbot-panel::before { background: linear-gradient(90deg, transparent, var(--magenta), transparent); }
+
+.panel-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+
+.panel-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+}
+
+.quiz-panel .panel-icon { background: rgba(0,243,255,0.08); }
+.chatbot-panel .panel-icon { background: rgba(255,0,229,0.08); }
+
+.panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.quiz-features {
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.qf-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(0,243,255,0.02);
+  border: 1px solid rgba(0,243,255,0.06);
+}
+
+.qf-item .qf-bullet {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.qf-item .qf-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.qf-item .qf-text strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Chatbot mock-up */
+.chatbot-mock {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.chat-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.chat-msg.bot {
+  background: rgba(255,0,229,0.06);
+  border: 1px solid rgba(255,0,229,0.12);
+  color: var(--text-secondary);
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+
+.chat-msg.user {
+  background: rgba(0,243,255,0.06);
+  border: 1px solid rgba(0,243,255,0.12);
+  color: var(--text-primary);
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+}
+
+.chat-msg .chat-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.5rem; font-weight: 600;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.chat-msg.bot .chat-label { color: var(--magenta); }
+.chat-msg.user .chat-label { color: var(--cyan); }
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 6 — STACK & CREDITS
+   ═══════════════════════════════════════════════════════════════ */
+.slide-6 {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(168,85,247,0.04) 0%, transparent 50%);
+}
+
+.stack-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  max-width: 1100px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.stack-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stack-section::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+
+.stack-section h3 {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 16px;
+}
+
+.stack-items {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.stack-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(0,243,255,0.02);
+  border: 1px solid rgba(0,243,255,0.06);
+  transition: all 0.3s ease;
+}
+
+.stack-item:hover {
+  border-color: rgba(0,243,255,0.2);
+  background: rgba(0,243,255,0.04);
+}
+
+.stack-item .si-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+  background: rgba(0,243,255,0.06);
+  flex-shrink: 0;
+}
+
+.stack-item .si-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem; font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stack-item .si-role {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+/* Mentors special card */
+.mentor-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255,184,0,0.03);
+  border: 1px solid rgba(255,184,0,0.12);
+  margin-top: 6px;
+}
+
+.mentor-card .mc-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+  background: rgba(255,184,0,0.1);
+  flex-shrink: 0;
+}
+
+.mentor-card .mc-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.88rem; font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mentor-card .mc-info {
+  font-size: 0.7rem; color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════ */
+.nav-dots {
+  position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 12px;
+  z-index: 100;
+}
+
+.nav-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-dot.active {
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan-glow);
+  transform: scale(1.3);
+}
+
+.nav-dot:hover {
+  background: var(--cyan);
+  opacity: 0.7;
+}
+
+.nav-dot .tooltip {
+  position: absolute; right: 22px; top: 50%; transform: translateY(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 4px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.nav-dot:hover .tooltip { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Scanline effect on slides */
+.scanline {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,243,255,0.15), transparent);
+  z-index: 99;
+  animation: scan-line 8s linear infinite;
+  pointer-events: none;
+}
+
+/* Corner decorations */
+.corner-deco {
+  position: absolute;
+  width: 30px; height: 30px;
+  border: 1px solid rgba(0,243,255,0.15);
+  pointer-events: none;
+}
+
+.corner-deco.tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+.corner-deco.tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+.corner-deco.bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+.corner-deco.br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: rgba(0,243,255,0.2); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   BACK BUTTON
+   ═══════════════════════════════════════════════════════════════ */
+.back-btn {
+  position: fixed; top: 20px; left: 20px;
+  z-index: 200;
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid rgba(0,243,255,0.25);
+  border-radius: 6px;
+  background: rgba(3,7,18,0.85);
+  backdrop-filter: blur(10px);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px rgba(0,243,255,0.15);
+  background: rgba(0,243,255,0.08);
+}
+
+.back-btn svg {
+  width: 14px; height: 14px;
+  transition: transform 0.2s;
+}
+
+.back-btn:hover svg {
+  transform: translateX(-3px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .slide { padding: 80px 24px 40px; }
+  .hero-title { font-size: 2.4rem; letter-spacing: 4px; }
+  .slide-title { font-size: 1.6rem; }
+  .team-grid { grid-template-columns: repeat(2, 1fr); }
+  .flow-container { flex-direction: column; align-items: center; }
+  .flow-connector { flex: 0 0 30px; width: 2px; height: 30px; margin: 0; }
+  .flow-connector::after { right: -6px; top: auto; bottom: -8px; content: '▾'; }
+  .adapt-layout, .quizbot-layout, .stack-layout { grid-template-columns: 1fr; }
+  .gamify-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Background Effects -->
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+<div class="scanline"></div>
+<canvas id="bg-canvas"></canvas>
+
+<!-- Navigation Dots -->
+<nav class="nav-dots" id="navDots">
+  <button class="nav-dot active" onclick="scrollToSlide(0)"><span class="tooltip">Title</span></button>
+  <button class="nav-dot" onclick="scrollToSlide(1)"><span class="tooltip">Architecture</span></button>
+  <button class="nav-dot" onclick="scrollToSlide(2)"><span class="tooltip">Adaptive Learning</span></button>
+  <button class="nav-dot" onclick="scrollToSlide(3)"><span class="tooltip">Gamification</span></button>
+  <button class="nav-dot" onclick="scrollToSlide(4)"><span class="tooltip">Quiz & Chatbot</span></button>
+  <button class="nav-dot" onclick="scrollToSlide(5)"><span class="tooltip">Stack & Credits</span></button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 1 — TITLE & TEAM DIRECTORY
+     ═══════════════════════════════════════════════════════════════ -->
+<section class="slide slide-1" id="slide-0">
+  <div class="corner-deco tl"></div>
+  <div class="corner-deco tr"></div>
+  <div class="corner-deco bl"></div>
+  <div class="corner-deco br"></div>
+
+  <div class="sih-header">
+    <div class="sih-logo">◆ SIH 2026</div>
+    <div class="sih-badge">Problem ID: 26101 &nbsp;·&nbsp; MoSPI — India's Official Statistical System</div>
+  </div>
+
+  <div class="slide-num">SLIDE 01 / 06</div>
+
+  <div class="problem-badge">
+    <div class="dot"></div>
+    <span>Smart India Hackathon 2026 &nbsp;·&nbsp; Ministry of Statistics & Programme Implementation</span>
+  </div>
+
+  <h1 class="hero-title">AKASHIC RECORDS</h1>
+  <p class="hero-sub">Autonomous AI Skill Intelligence &amp; Adaptive Learning Engine</p>
+  <p class="hero-tagline">// Bridging competency gaps in India's Official Statistical System via AI //</p>
+
+  <div class="team-grid">
+    <div class="team-card leader">
+      <div class="role">Team Leader</div>
+      <div class="name">Kavya Parmar</div>
+    </div>
+    <div class="team-card">
+      <div class="role">Member</div>
+      <div class="name">Yash Patel</div>
+    </div>
+    <div class="team-card">
+      <div class="role">Member</div>
+      <div class="name">Sujal Leuva</div>
+    </div>
+    <div class="team-card">
+      <div class="role">Member</div>
+      <div class="name">Sujal Lohana</div>
+    </div>
+    <div class="team-card">
+      <div class="role">Member</div>
+      <div class="name">Hiren Prajapati</div>
+    </div>
+    <div class="team-card">
+      <div class="role">Member</div>
+      <div class="name">Damini Jadav</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 2 — NEURAL ARCHITECTURE & INGESTION FLOW
+     ═══════════════════════════════════════════════════════════════ -->
+<section class="slide slide-2" id="slide-1">
+  <div class="corner-deco tl"></div>
+  <div class="corner-deco tr"></div>
+  <div class="corner-deco bl"></div>
+  <div class="corner-deco br"></div>
+
+  <div class="sih-header">
+    <div class="sih-logo">◆ SIH 2026</div>
+    <div class="sih-badge">Problem ID: 26101 &nbsp;·&nbsp; MoSPI</div>
+  </div>
+
+  <div class="slide-num">SLIDE 02 / 06</div>
+
+  <div class="slide-tag">// Neural Architecture</div>
+  <h2 class="slide-title">Document Ingestion &amp; AI Pipeline</h2>
+  <p class="slide-subtitle">End-to-end flow from raw file upload to adaptive learning calibration</p>
+
+  <div class="flow-container">
+    <!-- Step 1 -->
+    <div class="flow-step">
+      <div class="flow-icon-ring">
+        <span class="num">01</span>
+      </div>
+      <div class="flow-label">User Upload</div>
+      <div class="flow-desc">Files (PDF/TXT) ingested via browser FileReader API with client-side chunking</div>
+      <span class="flow-tech-badge">FileReader API</span>
+    </div>
+
+    <div class="flow-connector"></div>
+
+    <!-- Step 2 -->
+    <div class="flow-step">
+      <div class="flow-icon-ring">
+        <span class="num">02</span>
+      </div>
+      <div class="flow-label">Edge Processing</div>
+      <div class="flow-desc">Vercel Edge API chunks raw vectors, maps user profiles, and routes to inference</div>
+      <span class="flow-tech-badge">Vercel Edge Runtime</span>
+    </div>
+
+    <div class="flow-connector"></div>
+
+    <!-- Step 3 -->
+    <div class="flow-step">
+      <div class="flow-icon-ring">
+        <span class="num">03</span>
+      </div>
+      <div class="flow-label">AI Generation</div>
+      <div class="flow-desc">Groq Llama 3.3 generates tailored summaries, quizzes, and competency evaluations</div>
+      <span class="flow-tech-badge">Groq · Llama 3.3</span>
+    </div>
+
+    <div class="flow-connector"></div>
+
+    <!-- Step 4 -->
+    <div class="flow-step">
+      <div class="flow-icon-ring">
+        <span class="num">04</span>
+      </div>
+      <div class="flow-label">Feedback Loop</div>
+      <div class="flow-desc">Scores update global leaderboards and adaptively calibrate future learning paths</div>
+      <span class="flow-tech-badge">Supabase · PostgreSQL</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 3 — PREFERENCE-DRIVEN ADAPTIVE LEARNING
+     ═══════════════════════════════════════════════════════════════ -->
+<section class="slide slide-3" id="slide-2">
+  <div class="corner-deco tl"></div>
+  <div class="corner-deco tr"></div>
+  <div class="corner-deco bl"></div>
+  <div class="corner-deco br"></div>
+
+  <div class="sih-header">
+    <div class="sih-logo">◆ SIH 2026</div>
+    <div class="sih-badge">Problem ID: 26101 &nbsp;·&nbsp; MoSPI</div>
+  </div>
+
+  <div class="slide-num">SLIDE 03 / 06</div>
+
+  <div class="slide-tag">// Adaptive Intelligence</div>
+  <h2 class="slide-title">Preference-Driven Learning Paths</h2>
+  <p class="slide-subtitle">Dynamic pathways tailored to user course selections with real-time competency tracking</p>
+
+  <div class="adapt-layout">
+    <!-- Left: Course Pathways -->
+    <div>
+      <div class="section-label">Course-Adaptive Pathways</div>
+      <div class="course-path-list">
+        <div class="course-path cp-school">
+          <div class="cp-icon">📚</div>
+          <div class="cp-label">10th / 12th Board</div>
+          <div class="cp-tag">School</div>
+        </div>
+        <div class="course-path cp-college">
+          <div class="cp-icon">🎓</div>
+          <div class="cp-label">BCA · BCA AI-ML</div>
+          <div class="cp-tag">Undergrad</div>
+        </div>
+        <div class="course-path cp-uni">
+          <div class="cp-icon">🧠</div>
+          <div class="cp-label">BTech CS · BTech IT</div>
+          <div class="cp-tag">University</div>
+        </div>
+        <div class="course-path cp-uni">
+          <div class="cp-icon">📊</div>
+          <div class="cp-label">Data Science</div>
+          <div class="cp-tag">Specialized</div>
+        </div>
+        <div class="course-path cp-college">
+          <div class="cp-icon">🔐</div>
+          <div class="cp-label">Cybersecurity</div>
+          <div class="cp-tag">Undergrad</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Competency Evaluation + Roadmap -->
+    <div class="roadmap-visual">
+      <div class="section-label">Real-Time Competency Evaluation Vectors</div>
+      <div class="competency-bars">
+        <div class="comp-bar-item">
+          <div class="comp-header">
+            <span class="comp-name">Official Data Sampling & Estimation</span>
+            <span class="comp-pct">78%</span>
+          </div>
+          <div class="comp-track"><div class="comp-fill" style="width:78%"></div></div>
+        </div>
+        <div class="comp-bar-item">
+          <div class="comp-header">
+            <span class="comp-name">Socio-Economic Indicator Modeling</span>
+            <span class="comp-pct">64%</span>
+          </div>
+          <div class="comp-track"><div class="comp-fill purple" style="width:64%"></div></div>
+        </div>
+        <div class="comp-bar-item">
+          <div class="comp-header">
+            <span class="comp-name">Real-Time Telemetry & Pipeline Sync</span>
+            <span class="comp-pct">82%</span>
+          </div>
+          <div class="comp-track"><div class="comp-fill green" style="width:82%"></div></div>
+        </div>
+        <div class="comp-bar-item">
+          <div class="comp-header">
+            <span class="comp-name">Statistical Quality Assurance</span>
+            <span class="comp-pct">55%</span>
+          </div>
+          <div class="comp-track"><div class="comp-fill amber" style="width:55%"></div></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <div class="section-label">Custom Learning Roadmap</div>
+        <div class="roadmap-steps">
+          <div class="rm-step">
+            <div>
+              <div class="rm-label">Phase 1 — Foundation</div>
+              <div class="rm-sub">NSSO benchmarks, PLFS methodology</div>
+            </div>
+          </div>
+          <div class="rm-step">
+            <div>
+              <div class="rm-label">Phase 2 — Applied Practice</div>
+              <div class="rm-sub">CPI computation, IIP aggregation, SNA 2008</div>
+            </div>
+          </div>
+          <div class="rm-step locked">
+            <div>
+              <div class="rm-label">Phase 3 — Advanced Modeling</div>
+              <div class="rm-sub">Predictive analytics, pipeline optimization</div>
+            </div>
+          </div>
+          <div class="rm-step locked">
+            <div>
+              <div class="rm-label">Phase 4 — Mastery & Audit</div>
+              <div class="rm-sub">Full compliance certification</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 4 — GAMIFIED EVALUATION & LEADERBOARD MATRIX
+     ═══════════════════════════════════════════════════════════════ -->
+<section class="slide slide-4" id="slide-3">
+  <div class="corner-deco tl"></div>
+  <div class="corner-deco tr"></div>
+  <div class="corner-deco bl"></div>
+  <div class="corner-deco br"></div>
+
+  <div class="sih-header">
+    <div class="sih-logo">◆ SIH 2026</div>
+    <div class="sih-badge">Problem ID: 26101 &nbsp;·&nbsp; MoSPI</div>
+  </div>
+
+  <div class="slide-num">SLIDE 04 / 06</div>
+
+  <div class="slide-tag">// Gamified Intelligence</div>
+  <h2 class="slide-title">Evaluation &amp; Leaderboard Matrix</h2>
+  <p class="slide-subtitle">Engaging micro-assessments, interactive challenges, and competitive global rankings</p>
+
+  <div class="gamify-grid">
+    <div class="gamify-card cyan-accent">
+      <div class="gamify-icon">⚡</div>
+      <h3>Daily Micro-Assessments</h3>
+      <p>AI-generated 4-question MCQ sessions tailored to user's course level with instant scoring and yield boost.</p>
+      <div class="stat-row">
+        <span class="stat-badge"><span class="stat-val">4</span> Qs/session</span>
+        <span class="stat-badge"><span class="stat-val">24h</span> cooldown</span>
+      </div>
+    </div>
+
+    <div class="gamify-card magenta-accent">
+      <div class="gamify-icon">🏆</div>
+      <h3>Weekly Skill Challenges</h3>
+      <p>Timed competency evaluations across 4 statistical domains with progressive difficulty scaling.</p>
+      <div class="stat-row">
+        <span class="stat-badge"><span class="stat-val">4</span> domains</span>
+        <span class="stat-badge"><span class="stat-val">7d</span> cycle</span>
+      </div>
+    </div>
+
+    <div class="gamify-card purple-accent">
+      <div class="gamify-icon">🎮</div>
+      <h3>Interactive Coding Minigames</h3>
+      <p>Hands-on statistical computation challenges — CPI calculations, sampling exercises, data pipelines.</p>
+      <div class="stat-row">
+        <span class="stat-badge"><span class="stat-val">12+</span> challenges</span>
+        <span class="stat-badge">real-time</span>
+      </div>
+    </div>
+
+    <div class="gamify-card green-accent">
+      <div class="gamify-icon">📊</div>
+      <h3>Global Leaderboard</h3>
+      <p>Rankings synced across all users via Supabase with streak tracking, XP points, and tier promotion.</p>
+      <div class="stat-row">
+        <span class="stat-badge"><span class="stat-val">Real-time</span> sync</span>
+        <span class="stat-badge">tiered</span>
+      </div>
+    </div>
+
+    <div class="gamify-card amber-accent">
+      <div class="gamify-icon">🔥</div>
+      <h3>Streak & Consistency</h3>
+      <p>Daily engagement tracking with fire streaks, bonus multipliers, and milestone celebrations.</p>
+      <div class="stat-row">
+        <span class="stat-badge"><span class="stat-val">2×</span> max bonus</span>
+        <span class="stat-badge">30d goals</span>
+      </div>
+    </div>
+
+    <div class="gamify-card red-accent">
+      <div class="gamify-icon">🎖️</div>
+      <h3>Verified Skill Badges</h3>
+      <p>Blockchain-verified competency certificates for each statistical domain mastered — exportable to iGOT Karmayogi.</p>
+      <div class="stat-row">
+        <span class="stat-badge"><span class="stat-val">8</span> badge types</span>
+        <span class="stat-badge">exportable</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 5 — AI QUIZ GENERATOR & BEHAVIORAL CHATBOT
+     ═══════════════════════════════════════════════════════════════ -->
+<section class="slide slide-5" id="slide-4">
+  <div class="corner-deco tl"></div>
+  <div class="corner-deco tr"></div>
+  <div class="corner-deco bl"></div>
+  <div class="corner-deco br"></div>
+
+  <div class="sih-header">
+    <div class="sih-logo">◆ SIH 2026</div>
+    <div class="sih-badge">Problem ID: 26101 &nbsp;·&nbsp; MoSPI</div>
+  </div>
+
+  <div class="slide-num">SLIDE 05 / 06</div>
+
+  <div class="slide-tag">// Intelligent Automation</div>
+  <h2 class="slide-title">AI Quiz Engine &amp; Behavioral Copilot</h2>
+  <p class="slide-subtitle">File-to-quiz automation paired with an adaptive behavioral chatbot</p>
+
+  <div class="quizbot-layout">
+    <!-- Quiz Panel -->
+    <div class="quiz-panel">
+      <div class="panel-header">
+        <div class="panel-icon">📝</div>
+        <div class="panel-title">File Quiz Generator</div>
+      </div>
+
+      <div class="quiz-features">
+        <div class="qf-item">
+          <div class="qf-bullet"></div>
+          <div class="qf-text"><strong>Upload → Parse → Quiz:</strong> PDF, TXT, MD, CSV, JSON files automatically converted to strict MCQ sets</div>
+        </div>
+        <div class="qf-item">
+          <div class="qf-bullet"></div>
+          <div class="qf-text"><strong>Instant Grading:</strong> Each answer scored with detailed explanation and correct answer reveal</div>
+        </div>
+        <div class="qf-item">
+          <div class="qf-bullet"></div>
+          <div class="qf-text"><strong>Context-Aware:</strong> Questions generated from document content, not random — deep comprehension testing</div>
+        </div>
+        <div class="qf-item">
+          <div class="qf-bullet"></div>
+          <div class="qf-text"><strong>12K Char Limit:</strong> Efficient chunking pipeline handles large documents via Edge Runtime</div>
+        </div>
+      </div>
+
+      <div class="stat-row" style="margin-top: 16px;">
+        <span class="stat-badge"><span class="stat-val">12,000</span> char limit</span>
+        <span class="stat-badge"><span class="stat-val">5</span> file types</span>
+        <span class="stat-badge"><span class="stat-val">3</span> AI providers</span>
+      </div>
+    </div>
+
+    <!-- Chatbot Panel -->
+    <div class="chatbot-panel">
+      <div class="panel-header">
+        <div class="panel-icon">🤖</div>
+        <div class="panel-title">Behavioral Copilot</div>
+      </div>
+
+      <div class="chatbot-mock">
+        <div class="chat-msg user">
+          <div class="chat-label">User</div>
+          I keep failing CPI computation questions. Can you help?
+        </div>
+        <div class="chat-msg bot">
+          <div class="chat-label">Akashic Copilot</div>
+          I've analyzed your last 12 quiz sessions — CPI questions are your weakest at 33% accuracy. Let me adjust your learning path with targeted examples. I'll slow the pace and add visual breakdowns.
+        </div>
+        <div class="chat-msg user">
+          <div class="chat-label">User</div>
+          That sounds great. Make it practical.
+        </div>
+        <div class="chat-msg bot">
+          <div class="chat-label">Akashic Copilot</div>
+          Done. Your new roadmap includes 3 real-world CPI calculation exercises from NSSO data. I've also flagged related gaps in IIP indexing. Shall we start now? 🎯
+        </div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <div class="stat-row">
+          <span class="stat-badge">analyzes <span class="stat-val">quiz history</span></span>
+          <span class="stat-badge">adapts <span class="stat-val">tone & pacing</span></span>
+          <span class="stat-badge">tracks <span class="stat-val">learning velocity</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 6 — SYSTEM STACK, CREDITS & MENTORSHIP
+     ═══════════════════════════════════════════════════════════════ -->
+<section class="slide slide-6" id="slide-5">
+  <div class="corner-deco tl"></div>
+  <div class="corner-deco tr"></div>
+  <div class="corner-deco bl"></div>
+  <div class="corner-deco br"></div>
+
+  <div class="sih-header">
+    <div class="sih-logo">◆ SIH 2026</div>
+    <div class="sih-badge">Problem ID: 26101 &nbsp;·&nbsp; MoSPI</div>
+  </div>
+
+  <div class="slide-num">SLIDE 06 / 06</div>
+
+  <div class="slide-tag">// System Architecture</div>
+  <h2 class="slide-title">Tech Stack, Credits &amp; Mentorship</h2>
+  <p class="slide-subtitle">Built with cutting-edge AI models, cloud infrastructure, and expert guidance</p>
+
+  <div class="stack-layout">
+    <!-- AI Models & Tooling -->
+    <div class="stack-section">
+      <h3>AI Models &amp; Tooling</h3>
+      <div class="stack-items">
+        <div class="stack-item">
+          <div class="si-icon">💎</div>
+          <div>
+            <div class="si-name">Gemini</div>
+            <div class="si-role">Fallback inference provider</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🌀</div>
+          <div>
+            <div class="si-name">Antigravity</div>
+            <div class="si-role">Development framework</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🔮</div>
+          <div>
+            <div class="si-name">Claude</div>
+            <div class="si-role">Advanced reasoning model</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">⚡</div>
+          <div>
+            <div class="si-name">FreeBuff</div>
+            <div class="si-role">Agent orchestration platform</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🧠</div>
+          <div>
+            <div class="si-name">ChatGPT</div>
+            <div class="si-role">Conversational AI layer</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🦙</div>
+          <div>
+            <div class="si-name">Groq · Llama 3.3</div>
+            <div class="si-role">Primary inference — allam-2-7b</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backend & Infrastructure -->
+    <div class="stack-section">
+      <h3>Backend &amp; Infrastructure</h3>
+      <div class="stack-items">
+        <div class="stack-item">
+          <div class="si-icon">▲</div>
+          <div>
+            <div class="si-name">Next.js 15</div>
+            <div class="si-role">App Router · TypeScript · React 19</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">⚡</div>
+          <div>
+            <div class="si-name">Vercel Edge Runtime</div>
+            <div class="si-role">Sub-second API responses</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🗄️</div>
+          <div>
+            <div class="si-name">Supabase</div>
+            <div class="si-role">PostgreSQL · Auth · Realtime</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🎨</div>
+          <div>
+            <div class="si-name">Tailwind CSS v4</div>
+            <div class="si-role">Styling & design system</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🔐</div>
+          <div>
+            <div class="si-name">Google OAuth</div>
+            <div class="si-role">Email + Guest auth modes</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <div class="si-icon">🚀</div>
+          <div>
+            <div class="si-name">3 AI Providers</div>
+            <div class="si-role">Groq → Gemini → OpenAI fallback</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mentors & Helpers -->
+    <div class="stack-section">
+      <h3>Mentors &amp; Helpers</h3>
+      <div class="stack-items">
+        <div class="mentor-card">
+          <div class="mc-avatar">🌟</div>
+          <div>
+            <div class="mc-name">Zhordii</div>
+            <div class="mc-info">KJSIT, Mumbai</div>
+          </div>
+        </div>
+        <div class="mentor-card">
+          <div class="mc-avatar">🌟</div>
+          <div>
+            <div class="mc-name">Rocky</div>
+            <div class="mc-info">IIT Delhi</div>
+          </div>
+        </div>
+        <div class="mentor-card">
+          <div class="mc-avatar">🌟</div>
+          <div>
+            <div class="mc-name">Mystic</div>
+            <div class="mc-info">Diploma, Chandigarh</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+        <div class="section-label">Key Metrics</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          <div class="stat-badge" style="width: fit-content;"><span class="stat-val">700+</span> &nbsp;animated stars</div>
+          <div class="stat-badge" style="width: fit-content;"><span class="stat-val">3</span> &nbsp;AI providers with auto-fallback</div>
+          <div class="stat-badge" style="width: fit-content;"><span class="stat-val">8</span> &nbsp;course options</div>
+          <div class="stat-badge" style="width: fit-content;"><span class="stat-val">Edge Runtime</span> &nbsp;sub-second responses</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 28px; text-align: center;">
+        <div style="font-family: 'Orbitron', monospace; font-size: 0.65rem; letter-spacing: 3px; color: var(--cyan); text-shadow: 0 0 20px var(--cyan-glow);">
+          THANK YOU — JUDGES
+        </div>
+        <div style="font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; color: var(--text-dim); margin-top: 6px;">
+          Team Akashic Records · SIH 26101 · MoSPI
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+// ─── Particle Background ───
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+const PARTICLE_COUNT = 80;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Particle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 1.5 + 0.3;
+    this.speedX = (Math.random() - 0.5) * 0.3;
+    this.speedY = (Math.random() - 0.5) * 0.3;
+    this.opacity = Math.random() * 0.5 + 0.1;
+    this.pulse = Math.random() * Math.PI * 2;
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    this.pulse += 0.01;
+    if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+      this.reset();
+    }
+  }
+  draw() {
+    const op = this.opacity * (0.6 + 0.4 * Math.sin(this.pulse));
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0, 243, 255, ${op})`;
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  particles.push(new Particle());
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+
+  // Draw connecting lines
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(0, 243, 255, ${0.04 * (1 - dist / 120)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ─── Navigation ───
+function scrollToSlide(index) {
+  const el = document.getElementById(`slide-${index}`);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── Active dot tracking ───
+const slides = document.querySelectorAll('.slide');
+const dots = document.querySelectorAll('.nav-dot');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const idx = Array.from(slides).indexOf(entry.target);
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    }
+  });
+}, { threshold: 0.5 });
+
+slides.forEach(s => observer.observe(s));
+
+// ─── Animate competency bars on scroll ───
+const compFills = document.querySelectorAll('.comp-fill');
+const compObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.width = entry.target.style.width; // trigger repaint
+    }
+  });
+}, { threshold: 0.3 });
+compFills.forEach(f => {
+  const w = f.style.width;
+  f.style.width = '0%';
+  compObserver.observe(f);
+  setTimeout(() => { f.style.width = w; }, 800);
+});
+
+// ─── Keyboard nav ───
+let currentSlide = 0;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+    e.preventDefault();
+    currentSlide = Math.min(currentSlide + 1, slides.length - 1);
+    scrollToSlide(currentSlide);
+  } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+    e.preventDefault();
+    currentSlide = Math.max(currentSlide - 1, 0);
+    scrollToSlide(currentSlide);
+  }
+});
+
+// Sync currentSlide with scroll
+const scrollObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      currentSlide = Array.from(slides).indexOf(entry.target);
+    }
+  });
+}, { threshold: 0.5 });
+slides.forEach(s => scrollObserver.observe(s));
+</script>
+
+<!-- Back Button -->
+<a href="/" class="back-btn">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+  <span>Back to Site</span>
+</a>
+
+</body>
+</html>

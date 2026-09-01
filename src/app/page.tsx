@@ -118,7 +118,8 @@ export default function LandingPage() {
           </Link>
 
           <Link
-            href="/about"
+            href="/akashic-records-presentation.html"
+            target="_blank"
             className="group flex items-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-8 py-4 font-semibold text-cyan-400 hover:border-cyan-400/50 hover:bg-cyan-400/20 transition-all backdrop-blur-md cursor-pointer"
           >
             <Info size={18} className="opacity-70 group-hover:opacity-100 transition-opacity" />
