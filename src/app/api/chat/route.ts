@@ -5,93 +5,41 @@ interface ChatMessage {
   content: string;
 }
 
-const MAX_SOURCE_CHARS = 12000;
-
 function buildSystemPrompt(courseId: string | null): string {
-  const courseContext = courseId
-    ? `The user is studying "${courseId}". Tailor all responses to be relevant for this course/board.`
-    : "";
-  return `You are Akashic Copilot, an elite AI tutor for India's Official Statistical System under MoSPI (SIH 26101). ${courseContext}
-
-You help with statistical methodologies, document analysis, quiz generation, and career guidance in data science/CS/cybersecurity. Be precise, professional, and insightful. When generating quizzes, provide exactly 3 options per question with a correct answer and explanation.`;
+  const c = courseId ? `The user is studying "${courseId}". Tailor responses for this course.` : "";
+  return `You are Akashic Copilot, an AI tutor for India's statistical system under MoSPI (SIH 26101). ${c} Be concise and helpful. When asked for quizzes, provide 3 MCQ options with correct answer and explanation.`;
 }
 
-function truncateSource(content: string): string {
-  if (content.length <= MAX_SOURCE_CHARS) return content;
-  return content.slice(0, MAX_SOURCE_CHARS) + "\n\n[Document truncated]";
-}
-
-/** Extract the actual reply from any model — handles reasoning models, <think> tags, etc. */
-function extractReply(data: any): string | null {
+/** Extract content from any model response — handles reasoning models and <think> tags */
+function extractContent(data: any): string | null {
   const msg = data.choices?.[0]?.message;
   if (!msg) return null;
-
-  // 1. Try normal content first
-  let content = msg.content || "";
-
-  // 2. If content is empty or only <think> tags, try reasoning field
-  if (!content.trim() || /^[\s<think>\.]*$/.test(content)) {
-    content = msg.reasoning || "";
-  }
-
-  // 3. Strip <think>...</think><think> tags if present
-  content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-
-  // 4. Strip any leading/trailing whitespace
-  content = content.trim();
-
-  return content || null;
+  let text = msg.content || msg.reasoning || "";
+  text = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+  return text || null;
 }
 
-/* ─── Groq (primary) ───────────────────────────────────────────── */
-// allam-2-7b is a standard model that returns content normally
-// The others are reasoning models — we extract from content or reasoning field
-const GROQ_MODELS = [
-  "allam-2-7b",
-  "qwen/qwen3.6-27b",
-  "qwen/qwen3.8-27b",
-  "openai/gpt-oss-20b",
-  "openai/gpt-oss-120b",
-];
-
+/* ─── Groq (allam-2-7b confirmed working) ──────────────────────── */
 async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
-  for (const model of GROQ_MODELS) {
+  // Try models in order — allam-2-7b is the standard model that always works
+  const models = ["allam-2-7b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"];
+  for (const model of models) {
     try {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 2048 }),
       });
-      if (!res.ok) { console.warn(`Groq ${model}: ${res.status}`); continue; }
+      if (!res.ok) continue;
       const data = await res.json();
-      const reply = extractReply(data);
+      const reply = extractContent(data);
       if (reply) return reply;
-      console.warn(`Groq ${model}: no usable content`);
-    } catch (e: any) { console.warn(`Groq ${model}:`, e.message); continue; }
+    } catch { continue; }
   }
-  throw new Error("Groq: all models failed");
+  throw new Error("Groq: no models available");
 }
 
-/* ─── OpenAI (fallback) ────────────────────────────────────────── */
-async function callOpenAI(apiKey: string, messages: ChatMessage[]): Promise<string> {
-  const models = ["gpt-4o-mini", "gpt-3.5-turbo"];
-  for (const model of models) {
-    try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 2048 }),
-      });
-      if (!res.ok) { console.warn(`OpenAI ${model}: ${res.status}`); continue; }
-      const data = await res.json();
-      const reply = extractReply(data);
-      if (reply) return reply;
-    } catch (e: any) { console.warn(`OpenAI ${model}:`, e.message); continue; }
-  }
-  throw new Error("OpenAI: all models failed");
-}
-
-/* ─── Gemini (fallback) ────────────────────────────────────────── */
+/* ─── Gemini (gemini-flash-lite-latest confirmed working) ──────── */
 async function callGemini(apiKey: string, messages: ChatMessage[]): Promise<string> {
   let systemInstruction = "";
   const contents: { role: string; parts: { text: string }[] }[] = [];
@@ -107,126 +55,105 @@ async function callGemini(apiKey: string, messages: ChatMessage[]): Promise<stri
     }
   }
 
-  if (contents.length > 0 && contents[0].role !== "user") {
+  if (contents.length === 0 || contents[0].role !== "user") {
     contents.unshift({ role: "user", parts: [{ text: "Hello" }] });
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-  const body: any = {
-    contents,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-  };
-  if (systemInstruction) {
-    body.systemInstruction = { parts: [{ text: systemInstruction }] };
-  }
+  // Try models in order
+  const models = ["gemini-flash-lite-latest", "gemma-4-26b-a4b-it"];
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const body: any = {
+        contents,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+      };
+      if (systemInstruction) {
+        body.systemInstruction = { parts: [{ text: systemInstruction }] };
+      }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => "unknown");
-    throw new Error(`Gemini ${res.status}: ${err.slice(0, 150)}`);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (content) return content;
+    } catch { continue; }
   }
-  const data = await res.json();
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (content) return content;
-  throw new Error("Gemini returned empty response");
+  throw new Error("Gemini: no models available");
 }
 
 /* ─── Main handler ──────────────────────────────────────────────── */
 export async function POST(req: Request) {
   try {
     let body: any;
-    try {
-      body = await req.json();
-    } catch {
-      return Response.json({ reply: "Error: Invalid JSON in request body." }, { status: 400 });
+    try { body = await req.json(); } catch {
+      return Response.json({ reply: "Error: Invalid JSON." }, { status: 400 });
     }
-
     if (!body || typeof body !== "object") {
-      return Response.json({ reply: "Error: Request body must be a JSON object." }, { status: 400 });
+      return Response.json({ reply: "Error: Invalid request body." }, { status: 400 });
     }
-
-    const messages = Array.isArray(body.messages) ? body.messages : undefined;
-    const prompt = typeof body.prompt === "string" ? body.prompt : undefined;
-    const sourceContent = typeof body.sourceContent === "string" ? truncateSource(body.sourceContent) : undefined;
-    const mode = typeof body.mode === "string" ? body.mode : undefined;
-    const courseId = typeof body.courseId === "string" ? body.courseId : undefined;
 
     const groqKey = process.env.GROQ_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    if (!groqKey && !openaiKey && !geminiKey) {
+    if (!groqKey && !geminiKey) {
       return Response.json({
-        reply: "Error: No API keys configured. Add GROQ_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY to .env.local"
+        reply: "Error: No API keys found. Make sure GROQ_API_KEY or GEMINI_API_KEY is set in frontend/.env.local and restart the dev server."
       });
     }
 
-    const systemPrompt = buildSystemPrompt(courseId || null);
-    const chatMessages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
+    // Build messages
+    const chatMessages: ChatMessage[] = [
+      { role: "system", content: buildSystemPrompt(body.courseId || null) }
+    ];
+
+    const mode = typeof body.mode === "string" ? body.mode : "";
+    const prompt = typeof body.prompt === "string" ? body.prompt : "";
+    const sourceContent = typeof body.sourceContent === "string"
+      ? (body.sourceContent.length > 12000 ? body.sourceContent.slice(0, 12000) : body.sourceContent)
+      : "";
+    const messages = Array.isArray(body.messages) ? body.messages : [];
 
     if (mode === "summary" && sourceContent) {
-      chatMessages.push({
-        role: "user",
-        content: `Summarize this document in 2-3 sentences. Be brief and concise.\n\n${sourceContent}`
-      });
+      chatMessages.push({ role: "user", content: `Summarize in 2-3 sentences:\n\n${sourceContent}` });
     } else if (mode === "quiz" && sourceContent) {
-      const quizPrompt = prompt || `Generate 3 MCQs based on this document. Format each as:\nQUESTION: [text]\nOPTION A: [text]\nOPTION B: [text]\nOPTION C: [text]\nCORRECT: [A/B/C]\nEXPLANATION: [text]\nMake them progressively harder.`;
-      chatMessages.push({ role: "user", content: `${quizPrompt}\n\nDocument:\n${sourceContent}` });
+      chatMessages.push({ role: "user", content: `Generate 3 MCQs. Format each:\nQUESTION: [text]\nOPTION A: [text]\nOPTION B: [text]\nOPTION C: [text]\nCORRECT: [A/B/C]\nEXPLANATION: [text]\n\nDocument:\n${sourceContent}` });
     } else if (mode === "chat" && sourceContent) {
-      const userQuery = prompt || "Summarize this document";
-      chatMessages.push({
-        role: "user",
-        content: `Answer based on this document:\n\n--- DOCUMENT ---\n${sourceContent}\n--- END ---\n\nQuestion: ${userQuery}`
-      });
-    } else if (messages && messages.length > 0) {
-      const recent = messages.slice(-10);
-      for (const msg of recent) {
+      chatMessages.push({ role: "user", content: `Answer based on this document:\n---\n${sourceContent}\n---\n\nQuestion: ${prompt || "Summarize this"}` });
+    } else if (messages.length > 0) {
+      for (const msg of messages.slice(-10)) {
         const role = (msg.role === "assistant" || msg.role === "system") ? msg.role : "user";
         const content = msg.content || msg.text || "";
         if (content.trim()) chatMessages.push({ role, content });
       }
     } else {
-      chatMessages.push({ role: "user", content: prompt || "Hello, introduce yourself briefly." });
+      chatMessages.push({ role: "user", content: prompt || "Hello, who are you?" });
     }
 
-    if (!chatMessages.some(m => m.role === "user")) {
-      return Response.json({ reply: "Error: No valid message provided." });
-    }
-
-    // Try providers: Groq → OpenAI → Gemini
-    const errors: string[] = [];
-
+    // Try providers
     if (groqKey) {
       try {
         const reply = await callGroq(groqKey, chatMessages);
-        return Response.json({ reply, provider: "Groq" });
-      } catch (e: any) { errors.push(`Groq: ${e.message}`); }
-    }
-
-    if (openaiKey) {
-      try {
-        const reply = await callOpenAI(openaiKey, chatMessages);
-        return Response.json({ reply, provider: "OpenAI" });
-      } catch (e: any) { errors.push(`OpenAI: ${e.message}`); }
+        return Response.json({ reply });
+      } catch {}
     }
 
     if (geminiKey) {
       try {
         const reply = await callGemini(geminiKey, chatMessages);
-        return Response.json({ reply, provider: "Gemini" });
-      } catch (e: any) { errors.push(`Gemini: ${e.message}`); }
+        return Response.json({ reply });
+      } catch {}
     }
 
     return Response.json({
-      reply: `All AI providers failed:\n\n${errors.join("\n\n")}\n\nCheck your API keys in .env.local.`
+      reply: "Error: All providers failed. Please restart the dev server and check that your API keys are correct in frontend/.env.local"
     });
 
   } catch (error: any) {
-    console.error("API Route Error:", error);
-    return Response.json({ reply: `Error: ${error.message || "Failed to process request."}` });
+    return Response.json({ reply: `Error: ${error.message || "Unknown error"}` });
   }
 }
