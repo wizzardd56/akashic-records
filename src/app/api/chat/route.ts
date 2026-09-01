@@ -23,7 +23,7 @@ function truncateSource(content: string): string {
 }
 
 /* ─── Groq ──────────────────────────────────────────────────────── */
-const GROQ_MODELS = ["gpt-oss-120b", "qwen/qwen3.6-27b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+const GROQ_MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b", "allam-2-7b"];
 
 async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
   for (const model of GROQ_MODELS) {
