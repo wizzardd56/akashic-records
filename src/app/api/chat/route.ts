@@ -11,7 +11,6 @@ function buildSystemPrompt(courseId: string | null): string {
   const courseContext = courseId
     ? `The user is studying "${courseId}". Tailor all responses to be relevant for this course/board.`
     : "";
-
   return `You are Akashic Copilot, an elite AI tutor for India's Official Statistical System under MoSPI (SIH 26101). ${courseContext}
 
 You help with statistical methodologies, document analysis, quiz generation, and career guidance in data science/CS/cybersecurity. Be precise, professional, and insightful. When generating quizzes, provide exactly 3 options per question with a correct answer and explanation.`;
@@ -19,11 +18,41 @@ You help with statistical methodologies, document analysis, quiz generation, and
 
 function truncateSource(content: string): string {
   if (content.length <= MAX_SOURCE_CHARS) return content;
-  return content.slice(0, MAX_SOURCE_CHARS) + "\n\n[Document truncated due to length]";
+  return content.slice(0, MAX_SOURCE_CHARS) + "\n\n[Document truncated]";
 }
 
-/* ─── Groq ──────────────────────────────────────────────────────── */
-const GROQ_MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b", "allam-2-7b"];
+/** Extract the actual reply from any model — handles reasoning models, <think> tags, etc. */
+function extractReply(data: any): string | null {
+  const msg = data.choices?.[0]?.message;
+  if (!msg) return null;
+
+  // 1. Try normal content first
+  let content = msg.content || "";
+
+  // 2. If content is empty or only <think> tags, try reasoning field
+  if (!content.trim() || /^[\s<think>\.]*$/.test(content)) {
+    content = msg.reasoning || "";
+  }
+
+  // 3. Strip <think>...</think><think> tags if present
+  content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+
+  // 4. Strip any leading/trailing whitespace
+  content = content.trim();
+
+  return content || null;
+}
+
+/* ─── Groq (primary) ───────────────────────────────────────────── */
+// allam-2-7b is a standard model that returns content normally
+// The others are reasoning models — we extract from content or reasoning field
+const GROQ_MODELS = [
+  "allam-2-7b",
+  "qwen/qwen3.6-27b",
+  "qwen/qwen3.8-27b",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
+];
 
 async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
   for (const model of GROQ_MODELS) {
@@ -35,18 +64,18 @@ async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string
       });
       if (!res.ok) { console.warn(`Groq ${model}: ${res.status}`); continue; }
       const data = await res.json();
-      const content = data.choices?.[0]?.message?.content;
-      if (content) return content;
+      const reply = extractReply(data);
+      if (reply) return reply;
+      console.warn(`Groq ${model}: no usable content`);
     } catch (e: any) { console.warn(`Groq ${model}:`, e.message); continue; }
   }
-  throw new Error("Groq: all models failed or unavailable");
+  throw new Error("Groq: all models failed");
 }
 
-/* ─── OpenAI ────────────────────────────────────────────────────── */
-const OPENAI_MODELS = ["gpt-4o-mini", "gpt-3.5-turbo"];
-
+/* ─── OpenAI (fallback) ────────────────────────────────────────── */
 async function callOpenAI(apiKey: string, messages: ChatMessage[]): Promise<string> {
-  for (const model of OPENAI_MODELS) {
+  const models = ["gpt-4o-mini", "gpt-3.5-turbo"];
+  for (const model of models) {
     try {
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -55,14 +84,14 @@ async function callOpenAI(apiKey: string, messages: ChatMessage[]): Promise<stri
       });
       if (!res.ok) { console.warn(`OpenAI ${model}: ${res.status}`); continue; }
       const data = await res.json();
-      const content = data.choices?.[0]?.message?.content;
-      if (content) return content;
+      const reply = extractReply(data);
+      if (reply) return reply;
     } catch (e: any) { console.warn(`OpenAI ${model}:`, e.message); continue; }
   }
-  throw new Error("OpenAI: all models failed or unavailable");
+  throw new Error("OpenAI: all models failed");
 }
 
-/* ─── Gemini ────────────────────────────────────────────────────── */
+/* ─── Gemini (fallback) ────────────────────────────────────────── */
 async function callGemini(apiKey: string, messages: ChatMessage[]): Promise<string> {
   let systemInstruction = "";
   const contents: { role: string; parts: { text: string }[] }[] = [];
@@ -136,7 +165,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Build messages
     const systemPrompt = buildSystemPrompt(courseId || null);
     const chatMessages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
 
@@ -169,7 +197,7 @@ export async function POST(req: Request) {
       return Response.json({ reply: "Error: No valid message provided." });
     }
 
-    // Try providers in order: Groq → OpenAI → Gemini
+    // Try providers: Groq → OpenAI → Gemini
     const errors: string[] = [];
 
     if (groqKey) {
@@ -194,7 +222,7 @@ export async function POST(req: Request) {
     }
 
     return Response.json({
-      reply: `All AI providers failed:\n\n${errors.join("\n\n")}\n\nPlease check your API keys in .env.local.`
+      reply: `All AI providers failed:\n\n${errors.join("\n\n")}\n\nCheck your API keys in .env.local.`
     });
 
   } catch (error: any) {
