@@ -5,6 +5,14 @@ interface ChatMessage {
   content: string;
 }
 
+// Models in priority order — first one that works wins
+const GROQ_MODELS = [
+  "gpt-oss-120b",
+  "qwen/qwen3.6-27b",
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
+];
+
 function buildSystemPrompt(courseId: string | null): string {
   const courseContext = courseId
     ? `The user is studying "${courseId}". Tailor all responses, examples, and quiz questions to be relevant and age-appropriate for this course/board.`
@@ -20,6 +28,39 @@ You help with:
 - Providing career guidance related to data science, cybersecurity, and CS fields
 
 Be precise, professional, and insightful. Use clear formatting. When generating quizzes, always provide exactly 3 options per question with a correct answer and explanation.`;
+}
+
+async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
+  for (const model of GROQ_MODELS) {
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn(`Model ${model} failed: ${response.status}`);
+        continue; // try next model
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content) return content;
+    } catch (e) {
+      console.warn(`Model ${model} error:`, e);
+      continue;
+    }
+  }
+  throw new Error("All Groq models failed. Check your API key and model access.");
 }
 
 export async function POST(req: Request) {
@@ -48,7 +89,7 @@ export async function POST(req: Request) {
 
 QUESTION: [question text]
 OPTION A: [first option]
-OPTION B: [second option]  
+OPTION B: [second option]
 OPTION C: [third option]
 CORRECT: [A, B, or C]
 EXPLANATION: [brief explanation]
@@ -78,31 +119,7 @@ Repeat for all 3 questions. Make them progressively harder.`;
       });
     }
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: chatMessages,
-        temperature: 0.7,
-        max_tokens: 2048,
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Groq API error:", response.status, errText);
-      return Response.json({
-        reply: `Groq API Error (${response.status}): ${errText.slice(0, 200)}`
-      });
-    }
-
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "No response generated.";
-
+    const reply = await callGroq(apiKey, chatMessages);
     return Response.json({ reply });
 
   } catch (error: any) {
