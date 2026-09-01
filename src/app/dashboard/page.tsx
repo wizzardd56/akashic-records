@@ -23,6 +23,7 @@ import { AICopilotDrawer } from "./components/AICopilotDrawer";
 import { QuizModal } from "./components/QuizModal";
 import { JudgesTourModal } from "./components/JudgesTourModal";
 import { supabase, fetchUserProfile, syncUserProfile } from "./supabaseClient";
+import { StarField } from "../../shared/components/StarField";
 
 export default function DashboardPage() {
     const [isCopilotOpen, setIsCopilotOpen] = useState(false);
@@ -177,12 +178,8 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-6 md:p-10 relative">
-            {/* Radial Glow */}
-            <div
-                className="pointer-events-none fixed top-0 left-1/2 -z-10 h-96 w-full -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,_var(--color-accent)_0%,_transparent_70%)] opacity-10 blur-3xl"
-                aria-hidden="true"
-            />
+        <div className="min-h-screen text-foreground p-6 md:p-10 relative">
+            <StarField />
 
             {/* SIH Evaluator / Judges Tour Banner (Increased Height) */}
             <div className="flex items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 px-6 py-6 backdrop-blur-md shadow-lg mb-6">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     Award,
     CheckCircle2,
@@ -87,6 +87,15 @@ const OFFICIAL_STATISTICS_QUESTIONS: QuizQuestion[] = [
     },
 ];
 
+function shuffleArray<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
 interface QuizModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -99,12 +108,25 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
     const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
     const [score, setScore] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
+    const [questions, setQuestions] = useState<QuizQuestion[]>(OFFICIAL_STATISTICS_QUESTIONS);
+
+    // Shuffle questions every time modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setQuestions(shuffleArray(OFFICIAL_STATISTICS_QUESTIONS));
+            setCurrentIdx(0);
+            setSelectedOption(null);
+            setIsAnswerSubmitted(false);
+            setScore(0);
+            setIsFinished(false);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
-    const currentQ = OFFICIAL_STATISTICS_QUESTIONS[currentIdx];
+    const currentQ = questions[currentIdx];
     const isCorrect = selectedOption === currentQ.correctIndex;
-    const progressPercent = ((currentIdx + 1) / OFFICIAL_STATISTICS_QUESTIONS.length) * 100;
+    const progressPercent = ((currentIdx + 1) / questions.length) * 100;
 
     const handleSelectOption = (idx: number) => {
         if (isAnswerSubmitted) return;
@@ -116,7 +138,7 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
     };
 
     const handleNextQuestion = () => {
-        if (currentIdx + 1 < OFFICIAL_STATISTICS_QUESTIONS.length) {
+        if (currentIdx + 1 < questions.length) {
             setCurrentIdx((prev) => prev + 1);
             setSelectedOption(null);
             setIsAnswerSubmitted(false);
@@ -126,20 +148,13 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
     };
 
     const handleApplyYield = () => {
-        const yieldBoost = Math.max(3, Math.round((score / OFFICIAL_STATISTICS_QUESTIONS.length) * 6.5));
+        const yieldBoost = Math.max(3, Math.round((score / questions.length) * 6.5));
         onQuizCompleted(yieldBoost);
         onClose();
-        // Reset state for subsequent runs
-        setTimeout(() => {
-            setCurrentIdx(0);
-            setSelectedOption(null);
-            setIsAnswerSubmitted(false);
-            setScore(0);
-            setIsFinished(false);
-        }, 300);
     };
 
     const handleRestart = () => {
+        setQuestions(shuffleArray(OFFICIAL_STATISTICS_QUESTIONS));
         setCurrentIdx(0);
         setSelectedOption(null);
         setIsAnswerSubmitted(false);
@@ -170,7 +185,7 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
                                     MoSPI Competency Assessment
                                 </span>
                                 <span className="text-xs text-muted">
-                                    Question {currentIdx + 1} of {OFFICIAL_STATISTICS_QUESTIONS.length}
+                                    Question {currentIdx + 1} of {questions.length}
                                 </span>
                             </div>
 
@@ -250,7 +265,7 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
                         {/* Footer Navigation */}
                         <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/70">
                             <span className="text-xs text-muted">
-                                Score: <span className="text-accent font-bold">{score}</span> / {OFFICIAL_STATISTICS_QUESTIONS.length}
+                                Score: <span className="text-accent font-bold">{score}</span> / {questions.length}
                             </span>
 
                             {isAnswerSubmitted && (
@@ -259,7 +274,7 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
                                     onClick={handleNextQuestion}
                                     className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-xs sm:text-sm font-bold text-background transition-all hover:bg-accent-hover dark:glow-cyan cursor-pointer"
                                 >
-                                    <span>{currentIdx + 1 === OFFICIAL_STATISTICS_QUESTIONS.length ? "View Evaluation" : "Next Indicator"}</span>
+                                    <span>{currentIdx + 1 === questions.length ? "View Evaluation" : "Next Indicator"}</span>
                                     <ArrowRight size={15} />
                                 </button>
                             )}
@@ -281,8 +296,8 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
                             </h2>
                             <p className="mt-1 text-sm text-muted">
                                 You scored <span className="text-accent font-bold">{score}</span> out of{" "}
-                                <span className="font-bold text-foreground">{OFFICIAL_STATISTICS_QUESTIONS.length}</span> indicators
-                                ({Math.round((score / OFFICIAL_STATISTICS_QUESTIONS.length) * 100)}%).
+                                <span className="font-bold text-foreground">{questions.length}</span> indicators
+                                ({Math.round((score / questions.length) * 100)}%).
                             </p>
                         </div>
 
@@ -300,7 +315,7 @@ export function QuizModal({ isOpen, onClose, onQuizCompleted }: QuizModalProps) 
                                 </div>
                             </div>
                             <span className="rounded-lg bg-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-400 shrink-0">
-                                +{Math.max(3, Math.round((score / OFFICIAL_STATISTICS_QUESTIONS.length) * 6.5))}% Yield
+                                +{Math.max(3, Math.round((score / questions.length) * 6.5))}% Yield
                             </span>
                         </div>
 

@@ -16,6 +16,7 @@ import {
     FileUp,
     Loader2
 } from "lucide-react";
+import { StarField } from "../../shared/components/StarField";
 
 interface Source {
     id: string;
@@ -50,8 +51,81 @@ export default function NotebookPage() {
     ]);
     const [quizModalOpen, setQuizModalOpen] = useState(false);
     const [quizScore, setQuizScore] = useState<number | null>(null);
+    const [quizGenerating, setQuizGenerating] = useState(false);
+    const [aiQuiz, setAiQuiz] = useState<{
+        question: string;
+        options: string[];
+        correctIndex: number;
+        explanation: string;
+    } | null>(null);
 
     const activeSource = sources.find((s) => s.id === activeSourceId) || sources[0];
+
+    // AI Quiz Generation from Source
+    const handleGenerateQuiz = async () => {
+        setQuizModalOpen(true);
+        setQuizScore(null);
+        setQuizGenerating(true);
+        setAiQuiz(null);
+
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mode: "quiz",
+                    sourceContent: activeSource?.content || "",
+                    fileData: activeSource?.fileData || null,
+                    mimeType: activeSource?.mimeType || null,
+                    prompt: `Generate a challenging multiple-choice question with exactly 3 options based on this source. Format your response as:
+
+QUESTION: [your question]
+OPTION A: [first option]
+OPTION B: [second option]
+OPTION C: [third option]
+CORRECT: [letter A, B, or C]
+EXPLANATION: [brief explanation]`
+                })
+            });
+            const data = await res.json();
+            const text = data.reply || "";
+
+            // Parse the AI response
+            const qMatch = text.match(/QUESTION:\s*(.+)/i);
+            const optA = text.match(/OPTION A:\s*(.+)/i);
+            const optB = text.match(/OPTION B:\s*(.+)/i);
+            const optC = text.match(/OPTION C:\s*(.+)/i);
+            const cMatch = text.match(/CORRECT:\s*([A-C])/i);
+            const eMatch = text.match(/EXPLANATION:\s*(.+)/i);
+
+            if (qMatch && optA && optB && optC) {
+                const correctMap: Record<string, number> = { A: 0, B: 1, C: 2 };
+                setAiQuiz({
+                    question: qMatch[1].trim(),
+                    options: [optA[1].trim(), optB[1].trim(), optC[1].trim()],
+                    correctIndex: correctMap[(cMatch?.[1] || "A").toUpperCase()] ?? 0,
+                    explanation: eMatch?.[1]?.trim() || "Based on the analyzed source document."
+                });
+            } else {
+                // Fallback: use the raw response as a question
+                setAiQuiz({
+                    question: "Based on the analyzed document, what is the primary finding?",
+                    options: [text.slice(0, 120) + "...", "Alternative analysis", "No conclusion drawn"],
+                    correctIndex: 0,
+                    explanation: text.slice(0, 300)
+                });
+            }
+        } catch {
+            setAiQuiz({
+                question: "Could not generate quiz. Check your API connection.",
+                options: ["Retry generation", "Skip quiz", "Try another source"],
+                correctIndex: 0,
+                explanation: "API request failed. Please ensure your AI key is configured."
+            });
+        } finally {
+            setQuizGenerating(false);
+        }
+    };
 
     // Handle File Selection (PDF, Text, etc. as Base64)
     const handleDeviceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,7 +241,8 @@ export default function NotebookPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-6 md:p-10 flex flex-col relative">
+        <div className="min-h-screen text-foreground p-6 md:p-10 flex flex-col relative">
+            <StarField />
             {/* Top Navigation & Header */}
             <div className="flex items-center justify-between pb-6 border-b border-border mb-6">
                 <div className="flex items-center gap-3">
@@ -259,8 +334,9 @@ export default function NotebookPage() {
                         <div className="flex items-center gap-3 mt-4">
                             <button
                                 type="button"
-                                onClick={() => setQuizModalOpen(true)}
-                                className="flex items-center gap-2 rounded-xl bg-purple-500/20 border border-purple-500/40 px-4 py-2.5 text-xs font-bold text-purple-300 hover:bg-purple-600 hover:text-white transition-all cursor-pointer shadow-md"
+                                onClick={handleGenerateQuiz}
+                                disabled={!activeSource}
+                                className="flex items-center gap-2 rounded-xl bg-purple-500/20 border border-purple-500/40 px-4 py-2.5 text-xs font-bold text-purple-300 hover:bg-purple-600 hover:text-white transition-all cursor-pointer shadow-md disabled:opacity-50"
                             >
                                 <Award size={16} />
                                 <span>Generate Quiz from Source</span>
@@ -372,7 +448,7 @@ export default function NotebookPage() {
                     <div className="relative w-full max-w-md rounded-3xl border border-purple-500/40 bg-surface/90 p-8 shadow-2xl backdrop-blur-2xl text-center">
                         <button
                             type="button"
-                            onClick={() => { setQuizModalOpen(false); setQuizScore(null); }}
+                            onClick={() => { setQuizModalOpen(false); setQuizScore(null); setAiQuiz(null); }}
                             className="absolute top-5 right-5 text-muted hover:text-foreground cursor-pointer"
                         >
                             <X size={20} />
@@ -384,39 +460,60 @@ export default function NotebookPage() {
                         <h2 className="text-xl font-bold tracking-tight">AI Generated Source Quiz</h2>
                         <p className="text-xs text-muted mt-1">Based on: <span className="text-accent font-semibold">{activeSource?.title}</span></p>
 
-                        {quizScore === null ? (
+                        {quizGenerating ? (
+                            <div className="mt-6 flex flex-col items-center gap-3 py-8">
+                                <Loader2 size={32} className="animate-spin text-purple-400" />
+                                <p className="text-xs text-muted">AI is generating a quiz from your source...</p>
+                            </div>
+                        ) : quizScore === null && aiQuiz ? (
                             <div className="mt-6 text-left space-y-4">
                                 <p className="text-xs font-semibold text-foreground">
-                                    Q: Based on the analyzed document, what is the primary statistical objective or benchmark?
+                                    Q: {aiQuiz.question}
                                 </p>
                                 <div className="space-y-2">
-                                    {[
-                                        `Rigorous data telemetry calibration and compliance standard`,
-                                        `Unregulated baseline estimation with no baseline`,
-                                        `Manual spreadsheet entry without indexing`
-                                    ].map((opt, idx) => (
+                                    {aiQuiz.options.map((opt, idx) => (
                                         <button
                                             key={idx}
                                             type="button"
-                                            onClick={() => setQuizScore(idx === 0 ? 100 : 40)}
+                                            onClick={() => {
+                                                setQuizScore(idx === aiQuiz.correctIndex ? 100 : 30);
+                                            }}
                                             className="w-full text-left rounded-xl border border-border bg-background p-3 text-xs font-medium hover:border-accent transition-all cursor-pointer"
                                         >
-                                            {opt}
+                                            {String.fromCharCode(65 + idx)}. {opt}
                                         </button>
                                     ))}
                                 </div>
+                                {quizScore !== null && aiQuiz.explanation && (
+                                    <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-xs text-purple-200 mt-2">
+                                        <strong>Explanation:</strong> {aiQuiz.explanation}
+                                    </div>
+                                )}
                             </div>
-                        ) : (
+                        ) : quizScore !== null ? (
                             <div className="mt-6 space-y-4 py-4">
                                 <div className="text-3xl font-bold text-emerald-400">Score: {quizScore}%</div>
-                                <p className="text-xs text-muted">Quiz completed successfully! Competency score updated.</p>
-                                <button
-                                    type="button"
-                                    onClick={() => { setQuizModalOpen(false); setQuizScore(null); }}
-                                    className="rounded-xl bg-accent px-6 py-2.5 text-xs font-bold text-background cursor-pointer"
-                                >
-                                    Close & Return
-                                </button>
+                                <p className="text-xs text-muted">Quiz completed! Try generating another quiz for a new question.</p>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateQuiz}
+                                        className="rounded-xl bg-purple-500 px-5 py-2.5 text-xs font-bold text-white cursor-pointer hover:bg-purple-600 transition-all"
+                                    >
+                                        Generate New Quiz
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setQuizModalOpen(false); setQuizScore(null); setAiQuiz(null); }}
+                                        className="rounded-xl bg-accent px-6 py-2.5 text-xs font-bold text-background cursor-pointer"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-6 py-4 text-xs text-muted">
+                                Click "Generate Quiz from Source" to start.
                             </div>
                         )}
                     </div>

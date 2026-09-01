@@ -6,19 +6,19 @@ import { Palette } from "lucide-react";
 /* ------------------------------------------------------------------ */
 /*  Pre-generate static star positions once (avoids hydration mismatch) */
 /* ------------------------------------------------------------------ */
-const STAR_COUNT = 200;
+const STAR_COUNT = 600;
 const staticStars = Array.from({ length: STAR_COUNT }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
   y: Math.random() * 100,
-  size: Math.random() * 2 + 0.5,
-  opacity: Math.random() * 0.6 + 0.2,
+  size: Math.random() * 2.8 + 0.4,
+  opacity: Math.random() * 0.7 + 0.15,
   animDelay: Math.random() * 5,
-  animDuration: Math.random() * 3 + 2,
+  animDuration: Math.random() * 3 + 1.5,
 }));
 
 /* ------------------------------------------------------------------ */
-/*  Shooting star configuration                                        */
+/*  Shooting star configuration — 15 stars, bigger streaks             */
 /* ------------------------------------------------------------------ */
 interface ShootingStar {
   id: number;
@@ -27,15 +27,17 @@ interface ShootingStar {
   angle: number;
   length: number;
   speed: number;
+  thickness: number;
 }
 
-const SHOOTING_STAR_POOL: ShootingStar[] = Array.from({ length: 8 }, (_, i) => ({
+const SHOOTING_STAR_POOL: ShootingStar[] = Array.from({ length: 15 }, (_, i) => ({
   id: i,
-  startX: Math.random() * 120 - 10,
-  startY: Math.random() * 60 - 5,
-  angle: Math.random() * 30 + 15,
-  length: Math.random() * 120 + 80,
-  speed: Math.random() * 1.2 + 0.8,
+  startX: Math.random() * 130 - 15,
+  startY: Math.random() * 70 - 10,
+  angle: Math.random() * 35 + 12,
+  length: Math.random() * 200 + 120,
+  speed: Math.random() * 1.5 + 0.6,
+  thickness: Math.random() * 1.5 + 1.5,
 }));
 
 /* ------------------------------------------------------------------ */
@@ -60,32 +62,40 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
   const poolRef = useRef([...SHOOTING_STAR_POOL]);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  // Sync with external color if provided
   useEffect(() => {
     if (externalColor) setStarColor(externalColor);
   }, [externalColor]);
 
-  // Launch shooting stars at random intervals
+  /* Launch multiple shooting stars concurrently — 2–3 at a time */
   useEffect(() => {
-    const interval = setInterval(() => {
+    const launchBatch = () => {
       const pool = poolRef.current;
-      if (pool.length === 0) {
+      if (pool.length < 3) {
         poolRef.current = [...SHOOTING_STAR_POOL];
         return;
       }
-      const star = pool.shift()!;
-      setActiveShootingStars((prev) => [...prev, star]);
-      // Remove after animation completes
-      setTimeout(() => {
-        setActiveShootingStars((prev) => prev.filter((s) => s.id !== star.id));
-        poolRef.current.push({ ...star, startX: Math.random() * 120 - 10, startY: Math.random() * 60 - 5 });
-      }, (star.speed + 0.5) * 1000);
-    }, 1400);
+      const count = Math.random() > 0.5 ? 3 : 2;
+      for (let i = 0; i < count && pool.length > 0; i++) {
+        const star = pool.shift()!;
+        setActiveShootingStars((prev) => [...prev, star]);
+        setTimeout(() => {
+          setActiveShootingStars((prev) => prev.filter((s) => s.id !== star.id));
+          poolRef.current.push({
+            ...star,
+            startX: Math.random() * 130 - 15,
+            startY: Math.random() * 70 - 10,
+          });
+        }, (star.speed + 0.5) * 1000);
+      }
+    };
 
+    // Launch first batch immediately
+    launchBatch();
+
+    const interval = setInterval(launchBatch, 1800);
     return () => clearInterval(interval);
   }, []);
 
-  // Close picker on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
@@ -108,19 +118,23 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
       {/* ---- Star Field Layer ---- */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
         {/* Deep space gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#05050f] via-[#0a0a1a] to-[#0d0d24]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#03030a] via-[#070714] to-[#0a0a22]" />
 
-        {/* Subtle nebula glow */}
+        {/* Multiple nebula glows for dense atmosphere */}
         <div
-          className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20"
-          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.25)}, transparent 70%)` }}
+          className="absolute top-[-25%] left-[-15%] w-[70%] h-[70%] rounded-full blur-[140px] opacity-25"
+          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.3)}, transparent 65%)` }}
         />
         <div
-          className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[100px] opacity-15"
-          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.15)}, transparent 70%)` }}
+          className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20"
+          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.2)}, transparent 70%)` }}
+        />
+        <div
+          className="absolute top-[30%] left-[40%] w-[40%] h-[40%] rounded-full blur-[160px] opacity-15"
+          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.15)}, transparent 60%)` }}
         />
 
-        {/* Static stars */}
+        {/* Static stars — 600 of them */}
         {staticStars.map((star) => (
           <div
             key={star.id}
@@ -131,15 +145,17 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
               width: `${star.size}px`,
               height: `${star.size}px`,
               opacity: star.opacity,
-              backgroundColor: star.size > 1.8 ? starColor : "#e2e8f0",
+              backgroundColor: star.size > 1.8 ? starColor : "#d4d4dc",
               animationDelay: `${star.animDelay}s`,
               animationDuration: `${star.animDuration}s`,
-              boxShadow: star.size > 1.5 ? `0 0 ${star.size * 2}px ${hexToRgba(starColor, 0.4)}` : "none",
+              boxShadow: star.size > 1.2
+                ? `0 0 ${star.size * 3}px ${hexToRgba(starColor, 0.5)}, 0 0 ${star.size * 6}px ${hexToRgba(starColor, 0.15)}`
+                : "none",
             }}
           />
         ))}
 
-        {/* Shooting stars */}
+        {/* Shooting stars — big, bright streaks */}
         {activeShootingStars.map((star) => (
           <div
             key={`shoot-${star.id}`}
@@ -148,9 +164,9 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
               left: `${star.startX}%`,
               top: `${star.startY}%`,
               width: `${star.length}px`,
-              height: "1.5px",
+              height: `${star.thickness}px`,
               transform: `rotate(${star.angle}deg)`,
-              background: `linear-gradient(90deg, ${hexToRgba(starColor, 0)}, ${hexToRgba(starColor, 0.6)}, ${starColor})`,
+              background: `linear-gradient(90deg, ${hexToRgba(starColor, 0)}, ${hexToRgba(starColor, 0.5)}, ${hexToRgba(starColor, 0.85)}, ${starColor})`,
               animationDuration: `${star.speed}s`,
             }}
           />
@@ -199,7 +215,6 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
                 </button>
               ))}
             </div>
-            {/* Custom color input */}
             <div className="mt-2.5 flex items-center gap-2">
               <input
                 type="color"
