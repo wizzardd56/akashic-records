@@ -57,7 +57,7 @@ export function Navbar() {
                     className="hidden sm:flex items-center gap-1.5 rounded-xl border border-border bg-surface-alt/60 px-3 py-1.5 text-xs font-semibold text-foreground hover:border-accent transition-all cursor-pointer"
                 >
                     <BookOpen size={14} className="text-purple-400" />
-                    <span>NotebookLM</span>
+                    <span>AI Chatbox</span>
                 </Link>
 
                 {/* Utilities Dropdown */}

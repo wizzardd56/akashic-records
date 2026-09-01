@@ -46,7 +46,7 @@ export default function NotebookPage() {
 
     const [chatQuery, setChatQuery] = useState("");
     const [chatLog, setChatLog] = useState<{ role: "user" | "ai"; text: string }[]>([
-        { role: "ai", text: "Welcome to Akashic NotebookLM Workspace. Upload any PDF, TXT, or document from your device to trigger deep AI analysis and summarization!" }
+        { role: "ai", text: "Welcome to Akashic AI Chatbox Workspace. Upload any PDF, TXT, or document from your device to trigger deep AI analysis and summarization!" }
     ]);
     const [quizModalOpen, setQuizModalOpen] = useState(false);
     const [quizScore, setQuizScore] = useState<number | null>(null);
@@ -181,7 +181,7 @@ export default function NotebookPage() {
                     <div>
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-accent uppercase tracking-wider">
                             <Sparkles size={14} className="animate-pulse" />
-                            <span>NotebookLM Intelligence Hub</span>
+                            <span>AI Chatbox Intelligence Hub</span>
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight">Source Knowledge Workspace</h1>
                     </div>

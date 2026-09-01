@@ -108,7 +108,7 @@ export default function LandingPage() {
             href="/notebook"
             className="flex items-center gap-2 rounded-2xl border border-border bg-surface/60 px-8 py-4 font-semibold text-foreground hover:border-accent transition-all backdrop-blur-md cursor-pointer"
           >
-            <span>Explore Notebook Workspace</span>
+            <span>Explore AI Chatbox Workspace</span>
           </Link>
         </div>
 
