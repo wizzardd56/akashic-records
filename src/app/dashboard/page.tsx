@@ -181,8 +181,11 @@ export default function DashboardPage() {
         <div className="min-h-screen text-foreground p-6 md:p-10 relative">
             <StarField />
 
+            {/* Content layer above star field */}
+            <div className="relative z-10">
+
             {/* SIH Evaluator / Judges Tour Banner (Increased Height) */}
-            <div className="flex items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 px-6 py-6 backdrop-blur-md shadow-lg mb-6">
+            <div className="flex items-center justify-between rounded-2xl border border-accent/40 bg-accent/15 px-6 py-6 backdrop-blur-xl shadow-lg mb-6">
                 <div className="flex items-center gap-3">
                     <Cpu className="text-accent animate-pulse" size={20} />
                     <span className="text-sm font-semibold text-foreground">
@@ -277,7 +280,7 @@ export default function DashboardPage() {
 
             {/* Stat Metrics Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="rounded-xl border border-accent/30 bg-surface/40 p-6 backdrop-blur-md shadow-lg dark:glow-cyan">
+                <div className="rounded-xl border border-accent/30 bg-surface/80 p-6 backdrop-blur-xl shadow-lg dark:glow-cyan">
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                             Competency Alignment
@@ -288,7 +291,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted mt-1">+4.2% from previous statistical audit</p>
                 </div>
 
-                <div className="rounded-xl border border-purple-500/30 bg-surface/40 p-6 backdrop-blur-md shadow-lg">
+                <div className="rounded-xl border border-purple-500/30 bg-surface/80 p-6 backdrop-blur-xl shadow-lg">
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                             Active Skill Gaps
@@ -299,7 +302,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted mt-1">High priority: Data Pipeline & Sampling</p>
                 </div>
 
-                <div className="rounded-xl border border-accent/30 bg-surface/40 p-6 backdrop-blur-md shadow-lg">
+                <div className="rounded-xl border border-accent/30 bg-surface/80 p-6 backdrop-blur-xl shadow-lg">
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                             Learning Path Progress
@@ -313,7 +316,7 @@ export default function DashboardPage() {
 
             {/* Competency Breakdown & AI Learning Paths */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="rounded-2xl border border-border bg-surface/30 p-6 backdrop-blur-xl">
+                <div className="rounded-2xl border border-border bg-surface/70 p-6 backdrop-blur-xl">
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                         <Compass className="w-5 h-5 text-accent" /> Statistical System Competency Breakdown
                     </h2>
@@ -340,7 +343,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-border bg-surface/30 p-6 backdrop-blur-xl">
+                <div className="rounded-2xl border border-border bg-surface/70 p-6 backdrop-blur-xl">
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                         <Flame className="w-5 h-5 text-purple-400" /> AI-Generated Path to Mastery
                     </h2>
@@ -418,6 +421,7 @@ export default function DashboardPage() {
                 onTriggerQuiz={() => setIsQuizOpen(true)}
                 onTriggerExport={handleExportAuditReport}
             />
+            </div>
         </div>
     );
 }

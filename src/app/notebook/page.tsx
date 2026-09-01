@@ -243,6 +243,9 @@ EXPLANATION: [brief explanation]`
     return (
         <div className="min-h-screen text-foreground p-6 md:p-10 flex flex-col relative">
             <StarField />
+
+            {/* Content layer above star field */}
+            <div className="relative z-10 flex flex-col flex-1">
             {/* Top Navigation & Header */}
             <div className="flex items-center justify-between pb-6 border-b border-border mb-6">
                 <div className="flex items-center gap-3">
@@ -276,7 +279,7 @@ EXPLANATION: [brief explanation]`
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
                 {/* Left Column: Active Sources List */}
-                <div className="rounded-2xl border border-border bg-surface/30 p-5 flex flex-col gap-4 backdrop-blur-xl">
+                <div className="rounded-2xl border border-border bg-surface/70 p-5 flex flex-col gap-4 backdrop-blur-xl">
                     <div className="flex items-center justify-between">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
                             Active Sources ({sources.length})
@@ -318,7 +321,7 @@ EXPLANATION: [brief explanation]`
 
                 {/* Right Column: Deep AI Summary & Chat Q&A */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                    <div className="rounded-2xl border border-accent/30 bg-surface/40 p-6 backdrop-blur-xl shadow-lg relative overflow-hidden">
+                    <div className="rounded-2xl border border-accent/30 bg-surface/80 p-6 backdrop-blur-xl shadow-lg relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
                             <BrainCircuit size={120} className="text-accent" />
                         </div>
@@ -345,7 +348,7 @@ EXPLANATION: [brief explanation]`
                     </div>
 
                     {/* Chat Q&A Box */}
-                    <div className="rounded-2xl border border-border bg-surface/30 p-6 flex flex-col flex-1 backdrop-blur-xl min-h-[350px]">
+                    <div className="rounded-2xl border border-border bg-surface/70 p-6 flex flex-col flex-1 backdrop-blur-xl min-h-[350px]">
                         <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
                             <BrainCircuit size={18} className="text-accent" />
                             <span>Source Intelligence & Chat Q&A</span>
@@ -519,6 +522,7 @@ EXPLANATION: [brief explanation]`
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }
