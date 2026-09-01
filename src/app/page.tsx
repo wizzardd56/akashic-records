@@ -33,21 +33,15 @@ export default function LandingPage() {
   }, []);
 
   const handleGetStarted = () => {
-    if (isLoggedIn) {
-      if (hasOnboarded) {
-        window.location.href = "/dashboard";
-      } else {
-        setShowOnboarding(true);
-      }
-    } else {
-      setIsAuthModalOpen(true);
-    }
+    // Always show auth first, then onboarding
+    setIsAuthModalOpen(true);
   };
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const handleOnboardingComplete = (courseId: any) => {
-    completeOnboarding(courseId);
+    // Save the course selection to localStorage
+    localStorage.setItem("akashic_course", courseId);
     window.location.href = "/dashboard";
   };
 
@@ -75,12 +69,8 @@ export default function LandingPage() {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
       }
-      if (hasOnboarded) {
-        window.location.href = "/dashboard";
-      } else {
-        setIsAuthModalOpen(false);
-        setShowOnboarding(true);
-      }
+      setIsAuthModalOpen(false);
+      setShowOnboarding(true);
     } catch (err: any) {
       setAuthError(err.message || "Authentication failed");
     }
@@ -169,11 +159,7 @@ export default function LandingPage() {
                 type="button"
                 onClick={() => {
                   setIsAuthModalOpen(false);
-                  if (hasOnboarded) {
-                    window.location.href = "/dashboard";
-                  } else {
-                    setShowOnboarding(true);
-                  }
+                  setShowOnboarding(true);
                 }}
                 className="flex items-center justify-between w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/8 group cursor-pointer"
               >

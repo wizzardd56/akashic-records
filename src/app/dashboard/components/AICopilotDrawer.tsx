@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useCourse } from "../../../shared/providers/CourseProvider";
+import { FormattedText } from "../../../shared/components/FormattedText";
 import {
     Bot,
     Sparkles,
@@ -256,7 +257,11 @@ export function AICopilotDrawer({ isOpen, onClose, onOpenQuiz }: AICopilotDrawer
                                             : "bg-surface-alt/90 border border-border/70 text-foreground rounded-tl-xs"
                                         }`}
                                 >
-                                    <p>{msg.text}</p>
+                                    {msg.sender === "ai" ? (
+                                        <FormattedText text={msg.text} />
+                                    ) : (
+                                        <p>{msg.text}</p>
+                                    )}
                                     <span
                                         className={`block mt-1.5 text-[10px] ${msg.sender === "user" ? "text-background/75" : "text-muted"
                                             }`}

@@ -24,8 +24,10 @@ import { QuizModal } from "./components/QuizModal";
 import { JudgesTourModal } from "./components/JudgesTourModal";
 import { supabase, fetchUserProfile, syncUserProfile } from "./supabaseClient";
 import { StarField } from "../../shared/components/StarField";
+import { useCourse } from "../../shared/providers/CourseProvider";
 
 export default function DashboardPage() {
+    const { selectedCourse } = useCourse();
     const [isCopilotOpen, setIsCopilotOpen] = useState(false);
     const [isQuizOpen, setIsQuizOpen] = useState(false);
     const [isTourOpen, setIsTourOpen] = useState(false);
@@ -34,6 +36,13 @@ export default function DashboardPage() {
     const [userId, setUserId] = useState("default_officer");
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [isDbSynced, setIsDbSynced] = useState(false);
+
+    // Redirect to landing if no course selected (Google OAuth bypasses onboarding)
+    useEffect(() => {
+        if (!selectedCourse) {
+            window.location.href = "/";
+        }
+    }, [selectedCourse]);
 
     // Quick toast helper to display notification messages
     const showToast = (message: string) => {

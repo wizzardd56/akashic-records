@@ -17,6 +17,7 @@ import {
     Loader2
 } from "lucide-react";
 import { StarField } from "../../shared/components/StarField";
+import { FormattedText } from "../../shared/components/FormattedText";
 
 interface Source {
     id: string;
@@ -366,7 +367,7 @@ EXPLANATION: [brief explanation]`
                                                 : "bg-background/80 border border-border text-foreground"
                                             }`}
                                     >
-                                        {msg.text}
+                                        {msg.role === "ai" ? <FormattedText text={msg.text} className="whitespace-normal" /> : msg.text}
                                     </div>
                                 </div>
                             ))}
