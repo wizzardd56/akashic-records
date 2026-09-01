@@ -33,6 +33,7 @@ interface CourseContextType {
   setCourse: (id: CourseId) => void;
   hasOnboarded: boolean;
   completeOnboarding: (id: CourseId) => void;
+  markNeedsOnboarding: () => void;
 }
 
 const CourseContext = createContext<CourseContextType>({
@@ -40,32 +41,58 @@ const CourseContext = createContext<CourseContextType>({
   setCourse: () => {},
   hasOnboarded: false,
   completeOnboarding: () => {},
+  markNeedsOnboarding: () => {},
 });
 
-export function CourseProvider({ children }: { children: React.ReactNode }) {
-  const [selectedCourse, setSelectedCourse] = useState<CourseId | null>(null);
-  const [hasOnboarded, setHasOnboarded] = useState(false);
+/** Read saved course synchronously from localStorage (no async delay) */
+function getSavedCourse(): CourseId | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem("akashic_course") as CourseId | null;
+  } catch {
+    return null;
+  }
+}
 
-  useEffect(() => {
-    const saved = localStorage.getItem("akashic_course") as CourseId | null;
-    const onboarded = localStorage.getItem("akashic_onboarded");
-    if (saved) setSelectedCourse(saved);
-    if (onboarded === "true") setHasOnboarded(true);
-  }, []);
+function getSavedOnboarded(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem("akashic_onboarded") === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function CourseProvider({ children }: { children: React.ReactNode }) {
+  // Initialize synchronously from localStorage — no useEffect delay
+  const [selectedCourse, setSelectedCourse] = useState<CourseId | null>(getSavedCourse);
+  const [hasOnboarded, setHasOnboarded] = useState<boolean>(getSavedOnboarded);
 
   const setCourse = useCallback((id: CourseId) => {
     setSelectedCourse(id);
-    localStorage.setItem("akashic_course", id);
+    try {
+      localStorage.setItem("akashic_course", id);
+    } catch {}
   }, []);
 
   const completeOnboarding = useCallback((id: CourseId) => {
     setCourse(id);
     setHasOnboarded(true);
-    localStorage.setItem("akashic_onboarded", "true");
+    try {
+      localStorage.setItem("akashic_onboarded", "true");
+    } catch {}
   }, [setCourse]);
 
+  /** Force onboarding to show again (e.g., after Google OAuth redirect) */
+  const markNeedsOnboarding = useCallback(() => {
+    setHasOnboarded(false);
+    try {
+      localStorage.removeItem("akashic_onboarded");
+    } catch {}
+  }, []);
+
   return (
-    <CourseContext.Provider value={{ selectedCourse, setCourse, hasOnboarded, completeOnboarding }}>
+    <CourseContext.Provider value={{ selectedCourse, setCourse, hasOnboarded, completeOnboarding, markNeedsOnboarding }}>
       {children}
     </CourseContext.Provider>
   );

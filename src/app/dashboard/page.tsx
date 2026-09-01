@@ -24,10 +24,10 @@ import { QuizModal } from "./components/QuizModal";
 import { JudgesTourModal } from "./components/JudgesTourModal";
 import { supabase, fetchUserProfile, syncUserProfile } from "./supabaseClient";
 import { StarField } from "../../shared/components/StarField";
-import { useCourse } from "../../shared/providers/CourseProvider";
+import { useCourse, getCourseLabel } from "../../shared/providers/CourseProvider";
 
 export default function DashboardPage() {
-    const { selectedCourse } = useCourse();
+    const { selectedCourse, setCourse } = useCourse();
     const [isCopilotOpen, setIsCopilotOpen] = useState(false);
     const [isQuizOpen, setIsQuizOpen] = useState(false);
     const [isTourOpen, setIsTourOpen] = useState(false);
@@ -36,13 +36,6 @@ export default function DashboardPage() {
     const [userId, setUserId] = useState("default_officer");
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [isDbSynced, setIsDbSynced] = useState(false);
-
-    // Redirect to landing if no course selected (Google OAuth bypasses onboarding)
-    useEffect(() => {
-        if (!selectedCourse) {
-            window.location.href = "/";
-        }
-    }, [selectedCourse]);
 
     // Quick toast helper to display notification messages
     const showToast = (message: string) => {
@@ -192,6 +185,36 @@ export default function DashboardPage() {
 
             {/* Content layer above star field */}
             <div className="relative z-10">
+
+            {/* Course Selection Banner (for users who landed here without selecting a course) */}
+            {!selectedCourse && (
+                <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/15 px-6 py-4 backdrop-blur-xl shadow-lg">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">📚</span>
+                            <div>
+                                <h3 className="text-sm font-bold text-amber-300">Select Your Course</h3>
+                                <p className="text-xs text-amber-200/60">Choose your course/board to get personalized quizzes and content.</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                            {["10th Board", "12th Board", "BCA", "BCA AI-ML", "Cybersecurity", "BTech IT", "CS", "Data Science"].map((name) => {
+                                const id = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                                return (
+                                    <button
+                                        key={id}
+                                        type="button"
+                                        onClick={() => setCourse(id as any)}
+                                        className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-300 hover:bg-amber-500/25 transition-all cursor-pointer"
+                                    >
+                                        {name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* SIH Evaluator / Judges Tour Banner (Increased Height) */}
             <div className="flex items-center justify-between rounded-2xl border border-accent/40 bg-accent/15 px-6 py-6 backdrop-blur-xl shadow-lg mb-6">
