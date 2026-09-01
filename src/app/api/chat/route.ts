@@ -1,81 +1,114 @@
-import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+export const runtime = "edge";
+
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+function buildSystemPrompt(courseId: string | null): string {
+  const courseContext = courseId
+    ? `The user is studying "${courseId}". Tailor all responses, examples, and quiz questions to be relevant and age-appropriate for this course/board.`
+    : "";
+
+  return `You are Akashic Copilot, an elite AI tutor and knowledge assistant for India's Official Statistical System under MoSPI (Ministry of Statistics and Programme Implementation) for SIH 26101. ${courseContext}
+
+You help with:
+- Statistical methodologies (sampling, CPI/IIP, GVA modeling, SNA 2008)
+- Document analysis, summarization, and key insight extraction
+- Generating quiz questions and practice MCQs from study material
+- Answering follow-up questions about uploaded documents
+- Providing career guidance related to data science, cybersecurity, and CS fields
+
+Be precise, professional, and insightful. Use clear formatting. When generating quizzes, always provide exactly 3 options per question with a correct answer and explanation.`;
+}
 
 export async function POST(req: Request) {
-    try {
-        const body = await req.json();
-        const { messages, prompt, sourceContent, fileData, mimeType, mode } = body;
+  try {
+    const body = await req.json();
+    const { messages, prompt, sourceContent, mode, courseId } = body;
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
 
-        if (!apiKey) {
-            return NextResponse.json({
-                reply: "Error: GEMINI_API_KEY is missing from your Vercel Environment Variables. Please add it in your Vercel dashboard!"
-            });
-        }
-
-        const ai = new GoogleGenAI({ apiKey });
-        let contents: any = [];
-
-        // Handle File Uploads (PDFs, TXTs, etc.) via Multimodal Base64
-        if (fileData && mimeType) {
-            const base64Data = fileData.includes(",") ? fileData.split(",")[1] : fileData;
-            let instruction = "Provide a comprehensive, professional summary of this document for a government statistical officer under MoSPI.";
-
-            if (mode === "quiz") {
-                instruction = "Generate 1 clear multiple-choice question with 3 options based on this document.";
-            } else if (prompt) {
-                instruction = prompt;
-            }
-
-            contents = [
-                {
-                    inlineData: {
-                        mimeType: mimeType,
-                        data: base64Data
-                    }
-                },
-                {
-                    text: instruction
-                }
-            ];
-        } else {
-            // Handle Text Prompts, Copilot Drawer, and Source Q&A
-            let promptText = "";
-            if (sourceContent || mode) {
-                const latestPrompt = prompt || "Analyze this source";
-                if (mode === "summary") {
-                    promptText = `You are an expert document summarizer for MoSPI. Provide a detailed, professional summary of the following document source:\n\n${sourceContent}`;
-                } else if (mode === "quiz") {
-                    promptText = `You are an expert quiz generator. Generate a clear multiple-choice question with 3 options based on this source text:\n\n${sourceContent}`;
-                } else {
-                    promptText = `You are an expert AI assistant for MoSPI analyzing source documents. Context / Source Material: "${sourceContent}"\n\nUser Query: ${latestPrompt}`;
-                }
-            } else {
-                const latestMessage = (messages && messages.length > 0)
-                    ? (messages[messages.length - 1]?.content || "Hello")
-                    : (prompt || "Hello");
-
-                promptText = `You are Akashic Copilot, an elite AI assistant for India's Official Statistical System under MoSPI (Ministry of Statistics and Programme Implementation) for SIH 26101. Provide precise, professional, and insightful answers regarding statistical data, sampling, CPI/IIP calculations, GVA modeling, and data pipelines. User query: ${latestMessage}`;
-            }
-
-            contents = promptText;
-        }
-
-        // Updated to latest recommended model: gemini-3.6-flash
-        const response = await ai.models.generateContent({
-            model: "gemini-3.6-flash",
-            contents: contents,
-        });
-
-        const reply = response.text || "Gemini generated an empty response.";
-        return NextResponse.json({ reply });
-
-    } catch (error: any) {
-        console.error("Gemini API SDK Error:", error);
-        return NextResponse.json(
-            { reply: `Gemini API Error: ${error.message || "Failed to process request."}` },
-            { status: 200 }
-        );
+    if (!apiKey) {
+      return Response.json({
+        reply: "Error: GROQ_API_KEY is missing. Please add it to your environment variables."
+      });
     }
+
+    const systemPrompt = buildSystemPrompt(courseId || null);
+    const chatMessages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
+
+    if (mode === "summary" && sourceContent) {
+      chatMessages.push({
+        role: "user",
+        content: `Provide a comprehensive, professional summary of the following document. Highlight key concepts, data points, and actionable insights:\n\n${sourceContent}`
+      });
+    } else if (mode === "quiz" && sourceContent) {
+      const quizPrompt = prompt || `Generate 3 challenging multiple-choice questions based strictly on this document. For each question, use this exact format:
+
+QUESTION: [question text]
+OPTION A: [first option]
+OPTION B: [second option]  
+OPTION C: [third option]
+CORRECT: [A, B, or C]
+EXPLANATION: [brief explanation]
+
+Repeat for all 3 questions. Make them progressively harder.`;
+      chatMessages.push({
+        role: "user",
+        content: `${quizPrompt}\n\nDocument content:\n${sourceContent}`
+      });
+    } else if (mode === "chat" && sourceContent) {
+      const userQuery = prompt || "Summarize this document";
+      chatMessages.push({
+        role: "user",
+        content: `You have been given a document as context. Answer the user's question based on this document.\n\n--- DOCUMENT ---\n${sourceContent}\n--- END DOCUMENT ---\n\nUser Question: ${userQuery}`
+      });
+    } else if (messages && messages.length > 0) {
+      for (const msg of messages) {
+        chatMessages.push({
+          role: msg.role || "user",
+          content: msg.content || msg.text || ""
+        });
+      }
+    } else {
+      chatMessages.push({
+        role: "user",
+        content: prompt || "Hello, introduce yourself briefly."
+      });
+    }
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: chatMessages,
+        temperature: 0.7,
+        max_tokens: 2048,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Groq API error:", response.status, errText);
+      return Response.json({
+        reply: `Groq API Error (${response.status}): ${errText.slice(0, 200)}`
+      });
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "No response generated.";
+
+    return Response.json({ reply });
+
+  } catch (error: any) {
+    console.error("Groq API Error:", error);
+    return Response.json({
+      reply: `Error: ${error.message || "Failed to process request."}`
+    });
+  }
 }

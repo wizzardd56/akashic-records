@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Sparkles, UserCheck, ArrowRight, X } from "lucide-react";
 import { supabase } from "./dashboard/supabaseClient";
 import { StarField } from "../shared/components/StarField";
+import { useCourse } from "../shared/providers/CourseProvider";
+import { OnboardingCourseModal } from "../shared/components/OnboardingCourseModal";
 
 export default function LandingPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -13,6 +15,7 @@ export default function LandingPage() {
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { hasOnboarded, completeOnboarding } = useCourse();
 
   // Check if user is already authenticated on mount
   useEffect(() => {
@@ -31,10 +34,21 @@ export default function LandingPage() {
 
   const handleGetStarted = () => {
     if (isLoggedIn) {
-      window.location.href = "/dashboard";
+      if (hasOnboarded) {
+        window.location.href = "/dashboard";
+      } else {
+        setShowOnboarding(true);
+      }
     } else {
       setIsAuthModalOpen(true);
     }
+  };
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const handleOnboardingComplete = (courseId: any) => {
+    completeOnboarding(courseId);
+    window.location.href = "/dashboard";
   };
 
   const handleGoogleAuth = async () => {
@@ -61,7 +75,12 @@ export default function LandingPage() {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
       }
-      window.location.href = "/dashboard";
+      if (hasOnboarded) {
+        window.location.href = "/dashboard";
+      } else {
+        setIsAuthModalOpen(false);
+        setShowOnboarding(true);
+      }
     } catch (err: any) {
       setAuthError(err.message || "Authentication failed");
     }
@@ -146,8 +165,16 @@ export default function LandingPage() {
 
             <div className="space-y-4">
               {/* Option 1: Continue as Guest */}
-              <Link
-                href="/dashboard"
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAuthModalOpen(false);
+                  if (hasOnboarded) {
+                    window.location.href = "/dashboard";
+                  } else {
+                    setShowOnboarding(true);
+                  }
+                }}
                 className="flex items-center justify-between w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/8 group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
@@ -160,7 +187,7 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <ArrowRight size={16} className="text-white/30 group-hover:text-cyan-400 transition-colors" />
-              </Link>
+              </button>
 
               <div className="relative flex py-2 items-center">
                 <div className="flex-grow border-t border-white/10"></div>
@@ -178,6 +205,7 @@ export default function LandingPage() {
               </button>
 
               {/* Email / Password Form */}
+              {/* After auth success, show onboarding next time */}
               <form onSubmit={handleEmailAuth} className="space-y-3 pt-2">
                 <div className="flex rounded-xl border border-white/10 bg-white/5 overflow-hidden p-1">
                   <button
@@ -223,7 +251,11 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      )}
+      )}      {/* Onboarding Course Selection */}
+      <OnboardingCourseModal
+        isOpen={showOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
     </main>
-  );
+    );
 }

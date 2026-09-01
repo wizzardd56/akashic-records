@@ -6,19 +6,19 @@ import { Palette } from "lucide-react";
 /* ------------------------------------------------------------------ */
 /*  Pre-generate static star positions once (avoids hydration mismatch) */
 /* ------------------------------------------------------------------ */
-const STAR_COUNT = 600;
+const STAR_COUNT = 700;
 const staticStars = Array.from({ length: STAR_COUNT }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
   y: Math.random() * 100,
-  size: Math.random() * 2.8 + 0.4,
-  opacity: Math.random() * 0.7 + 0.15,
+  size: Math.random() * 3.2 + 0.3,
+  opacity: Math.random() * 0.8 + 0.15,
   animDelay: Math.random() * 5,
   animDuration: Math.random() * 3 + 1.5,
 }));
 
 /* ------------------------------------------------------------------ */
-/*  Shooting star configuration — 15 stars, bigger streaks             */
+/*  Shooting star configuration — 18 stars, massive streaks            */
 /* ------------------------------------------------------------------ */
 interface ShootingStar {
   id: number;
@@ -30,14 +30,14 @@ interface ShootingStar {
   thickness: number;
 }
 
-const SHOOTING_STAR_POOL: ShootingStar[] = Array.from({ length: 15 }, (_, i) => ({
+const SHOOTING_STAR_POOL: ShootingStar[] = Array.from({ length: 18 }, (_, i) => ({
   id: i,
-  startX: Math.random() * 130 - 15,
-  startY: Math.random() * 70 - 10,
+  startX: Math.random() * 140 - 20,
+  startY: Math.random() * 80 - 15,
   angle: Math.random() * 35 + 12,
-  length: Math.random() * 200 + 120,
-  speed: Math.random() * 1.5 + 0.6,
-  thickness: Math.random() * 1.5 + 1.5,
+  length: Math.random() * 350 + 200,
+  speed: Math.random() * 1.8 + 0.5,
+  thickness: Math.random() * 2 + 2,
 }));
 
 /* ------------------------------------------------------------------ */
@@ -66,15 +66,15 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
     if (externalColor) setStarColor(externalColor);
   }, [externalColor]);
 
-  /* Launch multiple shooting stars concurrently — 2–3 at a time */
+  /* Launch multiple shooting stars concurrently — 2–4 at a time */
   useEffect(() => {
     const launchBatch = () => {
       const pool = poolRef.current;
-      if (pool.length < 3) {
+      if (pool.length < 4) {
         poolRef.current = [...SHOOTING_STAR_POOL];
         return;
       }
-      const count = Math.random() > 0.5 ? 3 : 2;
+      const count = Math.floor(Math.random() * 3) + 2; // 2–4 at once
       for (let i = 0; i < count && pool.length > 0; i++) {
         const star = pool.shift()!;
         setActiveShootingStars((prev) => [...prev, star]);
@@ -82,17 +82,15 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
           setActiveShootingStars((prev) => prev.filter((s) => s.id !== star.id));
           poolRef.current.push({
             ...star,
-            startX: Math.random() * 130 - 15,
-            startY: Math.random() * 70 - 10,
+            startX: Math.random() * 140 - 20,
+            startY: Math.random() * 80 - 15,
           });
-        }, (star.speed + 0.5) * 1000);
+        }, (star.speed + 0.8) * 1000);
       }
     };
 
-    // Launch first batch immediately
     launchBatch();
-
-    const interval = setInterval(launchBatch, 1800);
+    const interval = setInterval(launchBatch, 1400);
     return () => clearInterval(interval);
   }, []);
 
@@ -118,23 +116,27 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
       {/* ---- Star Field Layer ---- */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
         {/* Deep space gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#03030a] via-[#070714] to-[#0a0a22]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#02020a] via-[#050510] to-[#080820]" />
 
-        {/* Multiple nebula glows for dense atmosphere */}
+        {/* Multiple nebula glows — big, bright, atmospheric */}
         <div
-          className="absolute top-[-25%] left-[-15%] w-[70%] h-[70%] rounded-full blur-[140px] opacity-25"
-          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.3)}, transparent 65%)` }}
+          className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] rounded-full blur-[160px] opacity-30"
+          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.35)}, transparent 60%)` }}
         />
         <div
-          className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20"
-          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.2)}, transparent 70%)` }}
+          className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] rounded-full blur-[140px] opacity-25"
+          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.25)}, transparent 65%)` }}
         />
         <div
-          className="absolute top-[30%] left-[40%] w-[40%] h-[40%] rounded-full blur-[160px] opacity-15"
-          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.15)}, transparent 60%)` }}
+          className="absolute top-[25%] left-[35%] w-[50%] h-[50%] rounded-full blur-[180px] opacity-20"
+          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.2)}, transparent 55%)` }}
+        />
+        <div
+          className="absolute bottom-[20%] left-[10%] w-[35%] h-[35%] rounded-full blur-[120px] opacity-15"
+          style={{ background: `radial-gradient(circle, ${hexToRgba(starColor, 0.18)}, transparent 60%)` }}
         />
 
-        {/* Static stars — 600 of them */}
+        {/* Static stars — 700 of them */}
         {staticStars.map((star) => (
           <div
             key={star.id}
@@ -148,14 +150,14 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
               backgroundColor: star.size > 1.8 ? starColor : "#d4d4dc",
               animationDelay: `${star.animDelay}s`,
               animationDuration: `${star.animDuration}s`,
-              boxShadow: star.size > 1.2
-                ? `0 0 ${star.size * 3}px ${hexToRgba(starColor, 0.5)}, 0 0 ${star.size * 6}px ${hexToRgba(starColor, 0.15)}`
+              boxShadow: star.size > 1.0
+                ? `0 0 ${star.size * 4}px ${hexToRgba(starColor, 0.6)}, 0 0 ${star.size * 8}px ${hexToRgba(starColor, 0.25)}, 0 0 ${star.size * 14}px ${hexToRgba(starColor, 0.08)}`
                 : "none",
             }}
           />
         ))}
 
-        {/* Shooting stars — big, bright streaks */}
+        {/* Shooting stars — massive, bright, glowing streaks */}
         {activeShootingStars.map((star) => (
           <div
             key={`shoot-${star.id}`}
@@ -166,8 +168,9 @@ export function StarField({ starColor: externalColor }: { starColor?: string }) 
               width: `${star.length}px`,
               height: `${star.thickness}px`,
               transform: `rotate(${star.angle}deg)`,
-              background: `linear-gradient(90deg, ${hexToRgba(starColor, 0)}, ${hexToRgba(starColor, 0.5)}, ${hexToRgba(starColor, 0.85)}, ${starColor})`,
+              background: `linear-gradient(90deg, ${hexToRgba(starColor, 0)}, ${hexToRgba(starColor, 0.3)}, ${hexToRgba(starColor, 0.7)}, ${hexToRgba(starColor, 0.9)}, ${starColor})`,
               animationDuration: `${star.speed}s`,
+              filter: `drop-shadow(0 0 ${star.thickness * 4}px ${hexToRgba(starColor, 0.7)}) drop-shadow(0 0 ${star.thickness * 8}px ${hexToRgba(starColor, 0.3)})`,
             }}
           />
         ))}

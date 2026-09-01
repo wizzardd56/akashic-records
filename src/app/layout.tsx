@@ -25,6 +25,8 @@ export const metadata: Metadata = {
     "AI-powered competency mapping, personalized learning, and iGOT Karmayogi course recommendations for India's Official Statistical System.",
 };
 
+import { CourseProvider } from "../shared/providers/CourseProvider";
+
 /* --- Root Layout --- */
 export default function RootLayout({
   children,
@@ -44,9 +46,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Navbar />
-          {/* pt-16 offsets the fixed navbar height (h-16 = 4rem) */}
-          <main className="pt-16">{children}</main>
+          <CourseProvider>
+            <Navbar />
+            {/* pt-16 offsets the fixed navbar height (h-16 = 4rem) */}
+            <main className="pt-16">{children}</main>
+          </CourseProvider>
         </ThemeProvider>
       </body>
     </html>

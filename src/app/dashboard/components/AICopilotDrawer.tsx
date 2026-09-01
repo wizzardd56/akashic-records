@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useCourse } from "../../../shared/providers/CourseProvider";
 import {
     Bot,
     Sparkles,
@@ -55,6 +56,7 @@ export function AICopilotDrawer({ isOpen, onClose, onOpenQuiz }: AICopilotDrawer
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const { selectedCourse } = useCourse();
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,52 +70,61 @@ export function AICopilotDrawer({ isOpen, onClose, onOpenQuiz }: AICopilotDrawer
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isOpen, onClose]);
 
-    const generateAIResponse = (userQuery: string): Message => {
+    const generateAIResponse = async (userQuery: string): Promise<Message> => {
         const lower = userQuery.toLowerCase();
-        let replyText = "";
-        let recs: { label: string; action: string; isQuiz?: boolean }[] | undefined = undefined;
 
+        // Direct quiz triggers
         if (lower.includes("quiz") || lower.includes("assessment") || lower.includes("practice")) {
-            replyText =
-                "Launching the interactive MoSPI Assessment Engine. You will be evaluated on NSSO multi-stage sampling, CPI Jevons index aggregation, and SNA 2008 GVA modeling. Click below to initiate the test session.";
-            recs = [
-                { label: "Start Assessment Now", action: "OPEN_QUIZ_MODAL", isQuiz: true },
-            ];
-        } else if (lower.includes("cpi") || lower.includes("iip") || lower.includes("price")) {
-            replyText =
-                "Your current gap in Macroeconomic Price Indices is 31%. For MoSPI compliance, focus on: (1) Geometric Mean Aggregation at elementary levels, (2) Modified Laspeyres formulation for IIP item weighting, and (3) Hedonic quality adjustments. Complete 'Advanced IIP & Price Index Protocols' on iGOT to gain +15% readiness.";
-            recs = [
-                { label: "Take CPI/IIP Quiz", action: "Launch MoSPI Practice Assessment", isQuiz: true },
-            ];
-        } else if (lower.includes("nsso") || lower.includes("sampling") || lower.includes("weight")) {
-            replyText =
-                "In NSSO multi-stage stratified sampling: Primary Sampling Units (PSUs) use PPS (Probability Proportional to Size), while Ultimate Sampling Units (Households) use Circular Systematic Sampling. Multipliers (weights) equal Inverse Selection Probability adjusted for non-response.";
-            recs = [
-                { label: "Test Sampling MCQs", action: "Launch MoSPI Practice Assessment", isQuiz: true },
-            ];
-        } else if (lower.includes("gva") || lower.includes("national accounts") || lower.includes("sna")) {
-            replyText =
-                "Under SNA 2008 & India NAS, Gross Value Added (GVA) at Basic Prices = Output at basic prices minus Intermediate Consumption. The key challenge is estimating the unorganized non-financial sector using Enterprise Survey (ASI/NSS) blow-up factors.";
-            recs = [
-                { label: "Assess GVA Knowledge", action: "Launch MoSPI Practice Assessment", isQuiz: true },
-            ];
-        } else {
-            replyText = `Analyzing "${userQuery}" against MoSPI competency standards. Based on your skill matrix, completing milestone step 2 will bridge your largest telemetry gap. Would you like a targeted practice quiz?`;
-            recs = [
-                { label: "Launch Practice Quiz", action: "Launch MoSPI Practice Assessment", isQuiz: true },
-            ];
+            return {
+                id: `msg-${Date.now()}`,
+                sender: "ai",
+                text: "Launching the interactive Assessment Engine. Click below to start.",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                recommendations: [
+                    { label: "Start Assessment Now", action: "OPEN_QUIZ_MODAL", isQuiz: true },
+                ],
+            };
         }
 
-        return {
-            id: `msg-${Date.now()}`,
-            sender: "ai",
-            text: replyText,
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            recommendations: recs,
-        };
+        // Call Groq API for real AI responses
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    prompt: userQuery,
+                    mode: "chat",
+                    courseId: selectedCourse,
+                    messages: [
+                        ...messages.map((m) => ({ role: m.sender === "user" ? "user" : "assistant", content: m.text })),
+                        { role: "user", content: userQuery }
+                    ]
+                })
+            });
+            const data = await res.json();
+
+            const recs: { label: string; action: string; isQuiz?: boolean }[] = [
+                { label: "Take a Quiz", action: "Launch MoSPI Practice Assessment", isQuiz: true },
+            ];
+
+            return {
+                id: `msg-${Date.now()}`,
+                sender: "ai",
+                text: data.reply || "No response generated.",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                recommendations: recs,
+            };
+        } catch {
+            return {
+                id: `msg-${Date.now()}`,
+                sender: "ai",
+                text: "Connection error. Please check your API key and try again.",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            };
+        }
     };
 
-    const handleSend = (textToSend?: string) => {
+    const handleSend = async (textToSend?: string) => {
         const query = textToSend || inputValue;
         if (!query.trim()) return;
 
@@ -137,11 +148,19 @@ export function AICopilotDrawer({ isOpen, onClose, onOpenQuiz }: AICopilotDrawer
         if (!textToSend) setInputValue("");
         setIsTyping(true);
 
-        setTimeout(() => {
-            const aiReply = generateAIResponse(query);
+        try {
+            const aiReply = await generateAIResponse(query);
             setMessages((prev) => [...prev, aiReply]);
+        } catch {
+            setMessages((prev) => [...prev, {
+                id: `msg-${Date.now()}`,
+                sender: "ai",
+                text: "Failed to connect to AI backend.",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            }]);
+        } finally {
             setIsTyping(false);
-        }, 700);
+        }
     };
 
     const handleResetChat = () => {
